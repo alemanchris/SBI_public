@@ -4,9 +4,10 @@
  Any comments please address them to christian.c.aleman[at]gmail.com
 
  EXAMPLE 1:
- Uses example data to run SBI
+ You should execute EXAMPLE1.m: Uses example data to run SBI
 
  EXAMPLE 2:
- Exact identification using GLF as the data generatig process
+ You should execute EXAMPLE2.m:
+ Runs the exact identification example, using GLF as the data generatig process.
  This also serves as a placebo example, the policy effect is zero thus
  estimated effect should be zero.
