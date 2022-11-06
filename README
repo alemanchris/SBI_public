@@ -1,5 +1,5 @@
  The following folders exemplify the use of the routine:
- SBI_nrm, that implements the Stage Based Identification methods in
+ SBI_nrm.m, that implements the Stage Based Identification methods in
  Aleman,  Busch,  Ludwig,  and  Santaeul`alia-Llopis  (2020)  
  Any comments please address them to christian.c.aleman[at]gmail.com
 
