@@ -14,13 +14,15 @@ SBI_norm calls functions:
     -norm_func: Performs normalization C to T and T to C, computes policy estimates and
         figures, see, figure index at the end.
     -bb_perform: Boostraps results from norm_func
-OPTPUT OF THE CODE:
+OUTPUT OF THE CODE:
     - Table of results with bootstrap 90% CI
     - Normalization figures
 
 
 User can choose between linear nm = 2 or quadratic nm = 3 time stage
 transform
+SYNTAX:
+    SBI_nrm(idta,itm,itp,inm,ismo,itsmo,ici,ib,irnam,itnam,ionam)
 
 INPUTS: 
     Required inputs
@@ -47,12 +49,7 @@ INPUTS:
         -ionam: Outcome label
 
 OUTPUT: 
-    -psi_esti: Nx3 Mapping parameters 
-    -pol_esti: Nx1 Policy Estimate in log difference
-    -tp_norm1: Nx1 Location of policy date after normalization
-    -fp_norm:  Nx1 Location of the first point in C to time of T
-    -l_opt:    Nx1 Lenght of the overlap interval 
-    -flag :    Nx1 1:Mapping didnt converge 2:Mapping delivers non-sence
+    - Output Table
 -Figures Index:  
   Mapping C to T
     fig_1: Mapping function
