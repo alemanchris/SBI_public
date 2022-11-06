@@ -1,7 +1,9 @@
- The following folders exemplify the use of the routine:
- SBI_nrm.m, that implements the Stage Based Identification methods in
+ The goal of the following examples is to illistrate the use of the routine:
+ SBI_nrm.m, that implements the Stage Based Identification method in
  Aleman,  Busch,  Ludwig,  and  Santaeul`alia-Llopis  (2020)  
  Any comments please address them to christian.c.aleman[at]gmail.com
+ Use SBI_nrm.m at your discretion
+ 
 
  EXAMPLE 1:
  You should execute EXAMPLE1.m: Uses example data to run SBI
