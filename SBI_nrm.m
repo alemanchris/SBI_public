@@ -13,6 +13,9 @@ BEFORE YOU RUN THIS ROUTINE MAKE SURE YOU HAVE THE FOLLOWING:
 -At least two regions and their respective population
 -Date of NATIONWIDE policy implementation. (itp)
 -Create an 'input', 'output' folder, SBI_norm will save results in these folders
+Technical Requirements: 
+(1)This routine has been tested using MATLAB 2020b
+(2)Requires the optimization toolbox
 
 DESCRIPTION
 SBI_norm calls functions:
@@ -416,7 +419,7 @@ par.maxyear = par.t1;       % Max year to graph
 I = par.time<=par.tp;
 par.tu = sum(I);   % Position of policy date
 % stage vector corresponding to time before unification
-par.vis_ind = 0;   % 0: Turn off Benchmark Graphs (boostrap graphs still show) 1: Show all graphs
+par.vis_ind = 1;   % 0: Turn off Benchmark Graphs (boostrap graphs still show) 1: Show all graphs
 opt.title_coeff = 1;        % Add coefficients and flag to the title o fig1
 opt.lw = 1.5;               % Linewidth
 opt.lw2 = 1.7;
@@ -1805,7 +1808,7 @@ if par.vis_ind ==1
         f6 = figure(6);
         set(f6, 'Visible',par.visible);
         hold on
-        plot(alt_yr,repmat(o_vals.pol_estiCT,[1,sizealt]),'m-','linewidth',opt.lw+1)
+        %plot(alt_yr,repmat(o_vals.pol_estiCT,[1,sizealt]),'m-','linewidth',opt.lw+1)
         plot(par.time_long,pdiff_CT,'ko','MarkerFaceColor','k','MarkerSize',10)
         plot(tp_normCT_1,gammarCT,'ko','MarkerFaceColor','k','MarkerSize',10)
         plot(par.time_long,zeros(par.nt_long,1),'Color', [0 0 0]+0.2)
@@ -1815,7 +1818,7 @@ if par.vis_ind ==1
         %xlim([par.minyear,par.maxyear])
         xlim([par.tp-3,rbound1]);
         ylim([ymin2,ymax2])
-        legend('$\gamma$','Location','northwest','FontSize',opt.fz2-1,'interpreter','latex','box','off')
+        %legend('$\gamma$','Location','northwest','FontSize',opt.fz2-1,'interpreter','latex','box','off')
         set(gca, 'FontSize',opt.fz1);
         ylabel('$\gamma(s)$','interpreter','latex','FontSize',opt.fz2)
         xlabel('Stage','interpreter','latex','FontSize',opt.fz2)
@@ -1826,7 +1829,7 @@ if par.vis_ind ==1
         f7 = figure(7);
         set(f7, 'Visible',par.visible);
         hold on
-        plot(alt_yr,repmat(o_vals.pol_estiCT,[1,sizealt]),'m-','linewidth',opt.lw+1)
+        %plot(alt_yr,repmat(o_vals.pol_estiCT,[1,sizealt]),'m-','linewidth',opt.lw+1)
         plot(par.time_long,pdiff_CT,'^','MarkerSize',10,'linewidth',2.2,'Color',[0.4940 0.1840 0.5560])
         plot(time_long_y,pdiff_CT_int,'o','MarkerSize',10,'linewidth',2.2,'Color',[0.4940 0.1840 0.5560])
         plot(par.time_long,pdiff_CT_pre,'k^','MarkerSize',10,'linewidth',2.2)
@@ -1839,7 +1842,7 @@ if par.vis_ind ==1
         %xlim([par.minyear,par.maxyear])
         xlim([par.tp-3,tp_normCT_1+1]);
         ylim([ymin2,ymax2])
-        legend('$\gamma$','Location','northwest','FontSize',opt.fz2-1,'interpreter','latex','box','off')
+        %legend('$\gamma$','Location','northwest','FontSize',opt.fz2-1,'interpreter','latex','box','off')
         set(gca, 'FontSize',opt.fz1);
         ylabel('$\gamma(s)$','interpreter','latex','FontSize',opt.fz2)
         xlabel('Stage','interpreter','latex','FontSize',opt.fz2)
@@ -1864,7 +1867,7 @@ if par.vis_ind ==1
         xlabel('Stage','interpreter','latex','FontSize',opt.fz2)
         subplot(2,1,2)
         hold on
-        plot(alt_yr,repmat(o_vals.pol_estiCT,[1,sizealt]),'m-','linewidth',opt.lw+1)
+        %plot(alt_yr,repmat(o_vals.pol_estiCT,[1,sizealt]),'m-','linewidth',opt.lw+1)
         plot(par.time_long,pdiff_CT,'ko','MarkerFaceColor','k','MarkerSize',10)
         plot(tp_normCT_1,gammarCT,'ko','MarkerFaceColor','k','MarkerSize',10)
         plot(par.time_long,zeros(par.nt_long,1),'Color', [0 0 0]+0.2)
@@ -1874,7 +1877,7 @@ if par.vis_ind ==1
         %xlim([par.minyear,par.maxyear])
         xlim([par.tp-1,tp_normCT_1+1]);
         ylim([ymin2,ymax2])
-        legend('$\gamma$','Location','northwest','FontSize',opt.fz2-1,'interpreter','latex','box','off')
+        %legend('$\gamma$','Location','northwest','FontSize',opt.fz2-1,'interpreter','latex','box','off')
         set(gca, 'FontSize',opt.fz1);
         ylabel('$\gamma(s)$','interpreter','latex','FontSize',opt.fz2)
         xlabel('Stage','interpreter','latex','FontSize',opt.fz2)
@@ -2005,7 +2008,7 @@ if par.vis_ind ==1
         f11 = figure(11);
         set(f11, 'Visible',par.visible);
         hold on
-        plot(alt_yr,repmat(o_vals.pol_estiTC,[1,sizealt]),'m-','linewidth',opt.lw+1)
+        %plot(alt_yr,repmat(o_vals.pol_estiTC,[1,sizealt]),'m-','linewidth',opt.lw+1)
         plot(par.time_long,pdiff_TC,'ko','MarkerFaceColor','k','MarkerSize',10)
         %plot(tp_normTC_1,gammarTC,'ko','MarkerFaceColor','k','MarkerSize',10)
         plot(par.time_long,zeros(par.nt_long,1),'Color', [0 0 0]+0.2)
@@ -2015,7 +2018,7 @@ if par.vis_ind ==1
         %xlim([par.minyear,par.maxyear])
         xlim([tp_normTC_1-1,par.tp+1]);
         ylim([ymin2,ymax2])
-        legend('$\gamma$','Location','northwest','FontSize',opt.fz2-1,'interpreter','latex','box','off')
+        %legend('$\gamma$','Location','northwest','FontSize',opt.fz2-1,'interpreter','latex','box','off')
         set(gca, 'FontSize',opt.fz1);
         ylabel('$\gamma(s)$','interpreter','latex','FontSize',opt.fz2)
         xlabel('Stage','interpreter','latex','FontSize',opt.fz2)
@@ -2040,7 +2043,7 @@ if par.vis_ind ==1
         xlabel('Stage','interpreter','latex','FontSize',opt.fz2)
         subplot(2,1,2)
         hold on
-        plot(alt_yr,repmat(o_vals.pol_estiTC,[1,sizealt]),'m-','linewidth',opt.lw+1)
+        %plot(alt_yr,repmat(o_vals.pol_estiTC,[1,sizealt]),'m-','linewidth',opt.lw+1)
         plot(par.time_long,pdiff_TC,'ko','MarkerFaceColor','k','MarkerSize',10)
         %plot(tp_normTC_1,gammarTC,'ko','MarkerFaceColor','k','MarkerSize',10)
         plot(par.time_long,zeros(par.nt_long,1),'Color', [0 0 0]+0.2)
@@ -2050,7 +2053,7 @@ if par.vis_ind ==1
         %xlim([par.minyear,par.maxyear])
         xlim([tp_normTC_1-1,par.tp+1]);
         ylim([ymin2,ymax2])
-        legend('$\gamma$','Location','northwest','FontSize',opt.fz2-1,'interpreter','latex','box','off')
+        %legend('$\gamma$','Location','northwest','FontSize',opt.fz2-1,'interpreter','latex','box','off')
         set(gca, 'FontSize',opt.fz1);
         ylabel('$\gamma(s)$','interpreter','latex','FontSize',opt.fz2)
         xlabel('Stage','interpreter','latex','FontSize',opt.fz2)
@@ -3152,8 +3155,8 @@ if opt.b==1
         figure(20);
         hold on
         grid on
-        plot([par.tp,rbound2],[mean_peB,mean_peB],'m-','linewidth',opt.lw2)
-        plot(out_r.tp_normCT,mean_peB,'o','Color','m','MarkerSize',6,'linewidth',2.2);
+        %plot([par.tp,rbound2],[mean_peB,mean_peB],'m-','linewidth',opt.lw2)
+        plot(out_r.tp_normCT,mean_peB,'o','MarkerFaceColor','k','Color','k','MarkerSize',6,'linewidth',2.2);
         area([par.tp,out_r.tp_normCT],[9999 9999],-9999,'FaceColor','r','FaceAlpha',.1,'EdgeColor','None','linestyle','none');
         p1 = plot(par.t0:par.t1,med_cgA,'m-','linewidth',opt.lw2);
         p2 = plot(par.t0:par.t1,mean_cgA,'m--','linewidth',opt.lw2);
