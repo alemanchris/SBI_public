@@ -13,6 +13,9 @@ BEFORE YOU RUN THIS ROUTINE MAKE SURE YOU HAVE THE FOLLOWING:
 -At least two regions and their respective population
 -Date of NATIONWIDE policy implementation. (itp)
 -Create an 'input', 'output' folder, SBI_norm will save results in these folders
+TECHNICAL REQUIREMENTS: 
+(1)This routine has been tested using MATLAB 2020b
+(2)Requires the optimization toolbox
 
 DESCRIPTION
 SBI_norm calls functions:
