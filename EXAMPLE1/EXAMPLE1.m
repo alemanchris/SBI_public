@@ -13,6 +13,7 @@ cd(main_path);
 
 % Load Data
 load([main_path,'/input/exampledata'])
+
 %% Required inputs
 % Asign Region Time Series
 idta(:,1) = data(:,3);
@@ -50,5 +51,4 @@ ib = [];
 cd(sbi_path);
 SBI_nrm(idta,itm,itp,inmts,inmlv,ismo,itsmo,[],[],[],ib,[],[],irnam,itnam,ionam,[],main_path,iOS);
 cd(main_path)
-
 
