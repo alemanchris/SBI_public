@@ -5,17 +5,17 @@ This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation
 
-Use this program at you own risk, please report any bugs to 
-christian.c.aleman@gmail.com
+Use this program at you own risk
 
 ATTENTION! 
 BEFORE YOU RUN THIS ROUTINE MAKE SURE YOU HAVE THE FOLLOWING: 
 -At least two regions and their respective population
 -Date of NATIONWIDE policy implementation. (itp)
--Create an 'input', 'output' folder, SBI_norm will save results in these folders
+-Create an 'input', 'output' folder, SBI_nrm.m will save results in these folders
 Technical Requirements: 
 (1)This routine has been tested using MATLAB 2020b
-(2)Requires the optimization toolbox
+(2)Requires the optimization, global optimization and curvefitting
+toolboxes
 
 DESCRIPTION
 SBI_norm calls functions:
@@ -24,8 +24,9 @@ SBI_norm calls functions:
         figures, see, figure index at the end.
     -bb_perform: Boostraps results from norm_func
 OUTPUT OF THE CODE:
-    - Table of results with bootstrap 90% CI
+    - Table of results with bootstrap 90% CI (also in Latex format)
     - Normalization figures
+    - Saves diary in output/diary_SBI.txt 
 
 
 User can choose between linear nmts = 1 or quadratic nmts = 2 stage time
@@ -44,38 +45,39 @@ INPUTS:
         -itp: Policy date (date after which one expects policy effects to be non-zero)
 
     Optional inputs
+        Visualize benchmark figures : figs 1 to 12
+            -ifv: 0: Dont show figures 1: Show figures (DEFAULT)
+            (Boostrap figures will still show if boostrap option is turned on ib: 1)
         Operating System : 
             -iOS: Choose your operating system 1:Windows 2:Unix/Linux/MAC
-            (Default: Windows)
+            (DEFAULT: Windows)
         Path: 
-            -ipath: Set path to save results, DEFAULT, Current Working
-            directory
+            -ipath: Set path to save results, (DEFAULT: Current Working
+            directory)
         Normalization options: 
-            -inmts: 1: (Default) Time stage transform 2:quadratic time stage transform 
-            -inmlv: 1: Proportional level Adjustment 2: (Default) Proportional
+            -inmts: 1: (DEFAULT) Time stage transform 2:quadratic time stage transform 
+            -inmlv: 1: Proportional level Adjustment 2: (DEFAULT) Proportional
                         + Aditive Level       
-            -ismo:  1: (Default) Smoothing 0: No smoothing
-            -irob:  1: Robustness of Smoother 0: No Robustness, will run
-            only(default)
-            the chosen smoother or No smoother, 
+            -ismo:  1: (DEFAULT) Smoothing 0: No smoothing
+            -irob:  1: Robustness of Smoother 0: No Robustness, will run only the chosen smoother or No smoother (DEFAULT) 
             -itsmo: Type of smoother        
                 (you can change the default values manually, in section "Options for smoothing" )
                 0: Moving average, with windown = 9;
                 1: Interpolation smoother CSAPS (DEFAULT) with smoothing parameter = 0.0008
-                2: Chebyshev nodes with Cheby Regression
-                3: B-Splines
+                2: Polynomial Regression: Monomial or Chebyshev basis (DEFAULT Cheby basis)
+                3: B-Splines, 
                 4: HP filter (lambda=50)
-            -iopen: 1: Open end Ident Interval 0: Limited Indent interval 
+            -iopen: 1: Open end Ident Interval 0: Limited Indent interval (DEFAULT) 
             -ici: CI bands threshold (DEFAULT 0.1 that is 90% Bands)
             -ib : 0: No bootstrap 1: Boostrap (DEFAULT)
-            -ilog: 0: Data in levels 1: Data in Logs
+            -ilog: 0: Data in levels (DEFAULT) 1: Data in Logs
         Placebo: 
-            -iplas: 1: Placebo 5 years early 0: No Placebo
+            -iplas: 1: Placebo 5 years early 0: No Placebo (DEFAULT)
         Labels
             -irnam: Region labels
             -itnam: Time label
             -ionam: Outcome label
-            -icusn: Custom Figure Prefix when saving figures, Default "F"
+            -icusn: Custom Figure Prefix when saving figures, (DEFAULT "F")
             
         
 
@@ -92,10 +94,10 @@ OUTPUT:
     fig_1: Mapping function
     fig_2: Time Series Before Normalization
     fig_3: Time Series After Normalization
-    fig_4: Zoom Overlap Interval Non Interpolated data
+    fig_4: Zoom Overlap Interval No Interpolated data
     fig_5: Zoom Overlap Interval + Interpolated data
     fig_6: Cum Gamma zoom Overlap Interval, Interpolated data
-    fig_7: Cum Gamma Zoom Overlap Interval, + Non interpolated data
+    fig_7: Cum Gamma Zoom Overlap Interval, + No interpolated data
     fig_8: Combined figure 5 and figure 6
   Mapping T to C
     fig_9:  Time Series After Normalization
@@ -106,10 +108,10 @@ OUTPUT:
     fig_20: Cummulative Gamma, + median at point estimate
     fig_21: Time Series with bands
     fig_22: Time Series Median Boostrap draw with bands
-    fig_23: histogram gamma around point estimate window
-    fig_24: histogram gamma around median window
-    fig_25: histogram gamma unrestricted
-    fig_26: histogram gamma identification window length    
+    fig_23: histogram: gamma restricted around point estimate window (10%)
+    fig_24: histogram: gamma restricted around median window (10%)
+    fig_25: histogram: gamma unrestricted
+    fig_26: histogram: identification window length    
 
 
 Figure 1 has the option to have the mapping parameters in the
@@ -120,51 +122,87 @@ REMARKS:
 -Trimming(anchor) is optional, to trim select par.cut>0
 -Local minizer is implemented
 
+CITATIONS: 
+- This routine uses the TABLE2LATEX function downloaded from
+ (https://github.com/foxelas/Matlab-assisting-functions/releases/tag/3.0), GitHub. 
 
-Left to implement in this routine:
-1. Input more than two regions
+
 
 
 %}
 
-function SBI_nrm(idta,itm,itp,inmts,inmlv,ismo,itsmo,isrob,iopen,ici,ib,ilog,iplas,irnam,itnam,ionam,icusn,ipath,iOS,varargin)
+function SBI_nrm(idta,itm,itp,inmts,inmlv,ismo,itsmo,isrob,iopen,ici,ib,ilog,iplas,irnam,itnam,ionam,icusn,ipath,ifv,varargin)
 %clear
 close all
 clc
-if nargin < 19
-    iOS = [];
-    if nargin < 18
-        ipath = [];
-        if nargin < 17
-            icusn = [];
-            if nargin < 16
-                ionam = [];
-                if nargin < 15
-                    itnam = [];
-                    if nargin < 14
-                        irnam = [];
-                        if nargin < 13
-                            iplas = [];
-                            if nargin < 12
-                                ilog = [];
-                                if nargin < 11
-                                    ib = [];
-                                    if nargin < 10
-                                        ici = [];
-                                        if nargin < 9
-                                            iopen = [];
-                                            if nargin < 8
-                                                isrob = [];
-                                                if nargin < 7
-                                                    itsmo = [];
-                                                    if nargin < 6
-                                                        ismo = [];
-                                                        if nargin < 5
-                                                            inmlv = [];
-                                                            if nargin < 4
-                                                                inmts = [];
-                                                                if nargin < 3
-                                                                    error('User did not provide enough input arguments')
+% Detect iOS
+if ispc
+    iOS = 1;
+else
+    iOS = 2;
+end
+
+
+% Check MATLAB Version 
+
+    warning('on','all')
+    vv = version('-release');
+    if vv == ['2022b']
+       
+    else
+        try
+            matver = isMATLABReleaseOlderThan("R2022b","release",3);
+            if matver==0
+                 warning('This routine has been tested for MATLAB R2022b Relsease 3: You are currently using an earlier version. Be aware some features might not run as expected or you might encounter unexpected errors.')
+            end
+        catch
+                 warning('This routine has been tested for MATLAB R2022b Relsease 3: You are currently using a different version. Be aware some features might not run as expected or you might encounter unexpected errors.')
+        end
+    end
+
+
+% Check necesary toolboxes
+toolboxes = matlab.addons.installedAddons;
+check_addons(toolboxes, 'Optimization Toolbox');
+check_addons(toolboxes, 'Global Optimization Toolbox');
+check_addons(toolboxes, 'Curve Fitting Toolbox');
+
+
+    if nargin < 19
+        ifv = [];
+        if nargin < 18
+            ipath = [];
+            if nargin < 17
+                icusn = [];
+                if nargin < 16
+                    ionam = [];
+                    if nargin < 15
+                        itnam = [];
+                        if nargin < 14
+                            irnam = [];
+                            if nargin < 13
+                                iplas = [];
+                                if nargin < 12
+                                    ilog = [];
+                                    if nargin < 11
+                                        ib = [];
+                                        if nargin < 10
+                                            ici = [];
+                                            if nargin < 9
+                                                iopen = [];
+                                                if nargin < 8
+                                                    isrob = [];
+                                                    if nargin < 7
+                                                        itsmo = [];
+                                                        if nargin < 6
+                                                            ismo = [];
+                                                            if nargin < 5
+                                                                inmlv = [];
+                                                                if nargin < 4
+                                                                    inmts = [];
+                                                                    if nargin < 3
+                                                                        error('User did not provide enough input arguments')
+                                                                    end
                                                                 end
                                                             end
                                                         end
@@ -181,18 +219,22 @@ if nargin < 19
             end
         end
     end
-end
 
 %% Set paths and "names"
 if isempty(ipath)
     ipath = cd;
 end
+
+
+%%
 if isempty(iOS)
     iOS = 1; % default widows
 end
 if iOS>2 || iOS <=0  
     error('Select Operating system: 1: Windows 2:UNIX')
 end
+
+
 if iOS==1
     par.outpath = [ipath,'\output\'];
     par.inpath  = [ipath,'\input\'];
@@ -201,9 +243,48 @@ else
     par.inpath  = [ipath,'/input/'];
 end
 
-%load([par.inpath,'/example_data']);
-%load([par.inpath,'/example_data']);
+%% Start diary
+diary off
+if iOS==1
+    delete([ipath,'\output\diary_SBI.txt']);
+    diary([ipath,'\output\diary_SBI.txt']);
+else
+    delete([ipath,'/output/diary_SBI.txt']);
+    diary([ipath,'/output/diary_SBI.txt']);
+end
+%% Create output folder
+disp('Creating Output folder:')
+if iOS==1
+    [status,msgA] = mkdir([ipath,'\output']);
+else
+    [status,msgA] = mkdir([ipath,'/output']);
+end
+if isempty(msgA)
+    disp('Output folder created')
+else
+    disp(msgA)
+end
+if status==0
+	error('Error while creating Output folder')
+end
+disp('...')
 
+%% Create Input folder
+disp('Creating Input folder:')
+if iOS==1
+    [status,msgA]  = mkdir([ipath,'\input']);
+else
+    [status,msgA]  = mkdir([ipath,'/input']);
+end
+if isempty(msgA)
+    disp('Input folder created')
+else
+    disp(msgA)
+end
+if status==0
+	error('Error while creating Input folder')
+end
+disp('...')
 % Set labels:
 if isempty(ionam)
     if isempty(ilog)
@@ -261,7 +342,7 @@ else
     error('More than 2 regions provided')
     par.nsp = par.ns+1;           % Number of regions + (1) Benchmark Region
 end
-par.nt = size(data.outcome,1);    % Number of time obeservations
+par.nt = size(data.outcome,1);    % Number of observations over time
 I = data.outcome<0;
 if sum(I,'all') >=1
     error('Negative Values detected, rescale your data and run again')
@@ -298,7 +379,7 @@ end
 
 % Time stage transform
 if isempty(inmts)
-    par.nmts = 2;             % 1: Linear mapping 2: Quadratic
+    par.nmts = 2;             % 1: Linear mapping (Default) 2: Quadratic
 else
     if inmts==1
         inmts = 2;
@@ -307,12 +388,12 @@ else
     else
         error('Choose 1: For Linear TS transform; Choose 2: For Quadratic')
     end
-    par.nmts = inmts;         % 1: Linear mapping 2: Quadratic
+    par.nmts = inmts;         % 1: Linear mapping (Default) 2: Quadratic
     if par.nmts==3
         warning('WARNING! User selected quadratic stage to time transform, for this case the inverse t^-1(s) is aproximated by a quadratic fit, the coeffients of this fit are reported, thus the mapping parameters cannot be interpreted in the same way as in the linear case')
     end
 end
-%Level Adjustment
+% Level Adjustment
 if isempty(inmlv)
     par.nmlv = 2;             % 1: Proportional  2: linear (Default)
 else
@@ -321,15 +402,19 @@ else
     end
     par.nmlv = inmlv;         % 1: Proportional  2: linear (Default)
 end
+%% Smoother parameters
+
 % For CSAPS
-par.sp = 0.003;%0.003;        % Smoothing parameter csaps, higher more smoother
+par.sp = 0.003;        % Smoothing parameter csaps, higher more smoother
 % For Moving average
 opt.maw = 8;                   % Moving average window.
 % For HP filer
-opt.hpt = 50;                  % HP lambda higher-more smooth
-% For B-splines and Chebyshev Polinomial
-opt.cheb_nodes = 1;            % (only for B-splines)1: use cheby nodes 2: Evenly Spaced 0: Automatic Matlab
-par.m = 3;%round(0.9*par.nt);  % Number of collocation points: min: n+1,
+opt.hpt = 50;                  % HP lambda: higher-smoother
+% For B-splines 
+opt.cheb_nodes = 1;            % 1: use cheby nodes 2: Evenly Spaced 0: Automatic Matlab
+par.m = 4;                     % Number of Nodes
+% Polynomial Regression  
+opt.cb = 1;                    % 0: Monomial Basis 1: Chebyshev Basis (DEFAULT)       
 par.n = 4;                     % Degree of the polinomial;
 
 if isempty(itsmo)
@@ -350,31 +435,33 @@ end
 
 opt.manual_guess = 2;   % 1: Pick Coefficient Initial Guess Manually 2: (Quad) Polinomial analitical guess
 
+% if opt.manual_guess = 1, then provide these manual guesses
 par.m_guess_lv_ori = [0,1]; % Choose your manual guess, not recomended
 par.m_guess_ts_ori = [0,1]; % Choose your manual guess, not recomended
 
 
-
 if opt.manual_guess==1
+    disp('User has chosen to provide manual initial guesses.')
     if size(par.m_guess_lv_ori,2)~=par.nmlv
-        error('ERROR: Wrong number of normalization params provided for the level guess')
+        
+        error('ERROR: Wrong number of normalization params provided for the level guess. Check you manual guess')
     end
 
     if size(par.m_guess_ts_ori,2)~=par.nmts
-        error('ERROR: Wrong number of normalization params provided for the stage time guess')
+        error('ERROR: Wrong number of normalization params provided for the stage time guess. Check you manual guess')
     end
 end
-par.rphi = 0;           % Restrict phi0 to 0
-opt.wght = 1;           % Weighted estimation
+par.rpsi = 0;           % Restrict psi0 to 0
+opt.wght = 0;           % Weighted estimation
 opt.imeth = 'linear';   % Type of interpolation
 par.cut = 0;            % Trimming, keep it at 0
-par.cuts = -eps;        % smooth starting in this cut
-opt.sgues = 0;          % Use fmincon as sgues
+par.cuts = -eps;        % smoothing starting in this cut (to avoid negative numbers)
+opt.sgues = 0;          % Use fmincon as sgues (Deprecated)
 opt.constr = 1;         % Constrain on quadratic
 par.min_match = 5;      % Minimum number of matched points
-opt.graph_smooth = 1;   % Graph smoothed functions
+opt.graph_smooth = 0;   % Graph smoothed functions
 opt.warn = 0;           % Show warnings for benchmark, warnings for boostrap automatically off
-opt.warn_bo = 1;        % Turn on Boostrqp iterations conter
+opt.warn_bo = 1;        % Turn on Boostrap iterations counter
 if isempty(iopen)
     opt.openend = 0;
 elseif iopen == 1
@@ -412,14 +499,18 @@ par.t00 = par.time(1); % Year where graph starts
 par.t1 = par.time(end);
 
 % Parameters for figures
-par.wd = 0.12;%0.1;          % gamma restricted to wd% of the identification window
+par.wd = 0.1;               % gamma restricted to wd% of the identification window
 par.minyear = par.t0-1;     % Min year to graph
 par.maxyear = par.t1;       % Max year to graph
 %par.tu = par.tp-par.t0+1;   % Position of policy date
 I = par.time<=par.tp;
 par.tu = sum(I);   % Position of policy date
-% stage vector corresponding to time before unification
-par.vis_ind = 1;   % 0: Turn off Benchmark Graphs (boostrap graphs still show) 1: Show all graphs
+
+if isempty(ifv)
+    par.vis_ind = 1;          % 0: Turn off Benchmark Graphs (boostrap graphs still show) 1: Show all graphs (DEFAULT)
+else
+    par.vis_ind = ifv; 
+end
 opt.title_coeff = 1;        % Add coefficients and flag to the title o fig1
 opt.lw = 1.5;               % Linewidth
 opt.lw2 = 1.7;
@@ -429,7 +520,7 @@ opt.fz3 = 23;% font size
 
 %% Initialize output vars
 
-par.no_smo = 5+1; % Number of Smoothers+1 for the noonsmoother case
+par.no_smo = 5+1; % Number of Smoothers (+1 for the noonsmoother case)
 PPA = NaN(par.nb,par.no_smo);
 PPAT = NaN(par.nb,par.no_smo);
 PPAO = NaN(par.nb,par.no_smo);
@@ -448,9 +539,13 @@ else
     end
 
 end
+basis_choice = 'Monomial';
+if opt.cb==1
+    basis_choice = 'Chebyshev';
+end
 smo_nam = {'0: Moving average',...
     '1: Interpolation smoother CSAPS (DEFAULT)',...
-    '2: Chebyshev nodes with Cheby Regression',...
+    ['2: Polynomial Regression with ',basis_choice,' basis'],...
     '3: B-Splines',...
     '4: HP filter'};
 %% Determine Control and Treatment
@@ -467,9 +562,10 @@ for oo = lsmo%0:5
 
     if oo==5
 
-        disp(['No Smoother'])
+        disp(['No Smoother: User chose to skip smoothing step'])
 
     else
+        disp(['Chosen Smoother:'])
         disp([char(smo_nam{oo+1})])
     end
     disp('-----------------------------------------------')
@@ -482,8 +578,7 @@ for oo = lsmo%0:5
     par.m_guess_lv = par.m_guess_lv_ori; % Choose your manual guess, not recomended
     opt.type_sth = oo;
 
-    par.m = 3;%round(0.9*par.nt);  % Mumber of collocation points: min: n+1,
-    par.n = 4;
+ 
 
     if opt.smooth == 0
         opt.type_sth = 99; % Just set to a number
@@ -519,10 +614,9 @@ for oo = lsmo%0:5
         om_estiTC = NaN(par.nsp,par.nmlv);
     end
 
-    if i_mg ==1
+    if i_mg ==1 
         % Using manual guess suggested by Initial run
         opt.manual_guess = 1;   % 1: Pick Coefficient Initial Guess Manually 2: Polinomial analitical guess
-        par.nmlv = 2;
         par.m_guess_ts = mg1_ts; % Choose your manual guess, not recomended
         par.m_guess_lv = mg1_lv; % Choose your manual guess, not recomended
     end
@@ -531,19 +625,15 @@ for oo = lsmo%0:5
     else
         flagT = 1;
     end
-    %flagC = 1;
-    %flagT = 2;
-    %i_mg = 0;
 
     %% Define Control and Treatment
-    %par.Cname = char(data.names_st(flagC,:));
-    %par.Tname = char(data.names_st(flagT,:));
+
 
     par.Cname = ['$y_{\mathcal{C}}(t):$ ',char(data.names_st(flagC,:))];
     par.Tname = ['$y_{\mathcal{T}}(t):$ ',char(data.names_st(flagT,:))];
 
     par.Tnamenorm = ['$y_{\mathcal{T}}(s):$ ',char(data.names_st(flagT,:))];
-    par.Cnamenorm = ['$\tilde{y}_{\mathcal{C}}(s;\mbox{\boldmath$\phi^{*}$}):$ ',char(data.names_st(flagC,:))];
+    par.Cnamenorm = ['$\tilde{y}_{\mathcal{C}}(s;\mbox{\boldmath$\psi^{*}$}):$ ',char(data.names_st(flagC,:))];
 
 
     data.C = data.outcome(:,flagC);
@@ -561,7 +651,7 @@ for oo = lsmo%0:5
     data.CO = datas.CO;
 
 
-    par.fapp = [char(cusn),'_reg_',num2str(1),'log',num2str(opt.logs),'op',num2str(opt.openend),'sm_',num2str(opt.smooth),'typ_',num2str(opt.type_sth),'deg_',num2str(par.n),'knots_',num2str(par.m),'bb_',num2str(opt.b),'wght_',num2str(opt.wght),'quad_',num2str(par.nmts),'prop_',num2str(par.nmlv)];
+    par.fapp = [char(cusn),'_reg_',num2str(1),'log',num2str(opt.logs),'op',num2str(opt.openend),'sm_',num2str(opt.smooth),'typ_',num2str(opt.type_sth),'deg_',num2str(par.n),'basis_',num2str(opt.cb),'bb_',num2str(opt.b),'wght_',num2str(opt.wght),'quad_',num2str(par.nmts),'prop_',num2str(par.nmlv)];
     par.name_fapp = 'nb500'; % for temporary resutls and boostrap figs;
 
 
@@ -645,7 +735,7 @@ for oo = lsmo%0:5
             data.C = datas_p.C;
             data.TO = datas_p.TO;
             data.CO = datas_p.CO;
-            par.fapp = [char(cusn),'_plas_hess_reg_',num2str(1),'log',num2str(opt.logs),'op',num2str(opt.openend),'sm_',num2str(opt.smooth),'typ_',num2str(opt.type_sth),'deg_',num2str(par.n),'knots_',num2str(par.m),'bb_',num2str(opt.b),'wght_',num2str(opt.wght),'quad_',num2str(par.nmts),'prop_',num2str(par.nmlv)];
+            par.fapp = [char(cusn),'_plas_reg_',num2str(1),'log',num2str(opt.logs),'op',num2str(opt.openend),'sm_',num2str(opt.smooth),'typ_',num2str(opt.type_sth),'deg_',num2str(par.n),'knots_',num2str(par.m),'bb_',num2str(opt.b),'wght_',num2str(opt.wght),'quad_',num2str(par.nmts),'prop_',num2str(par.nmlv)];
             par.name_fapp = 'plas_nb500'; % for temporary resutls and boostrap figs;
 
 
@@ -668,7 +758,8 @@ for oo = lsmo%0:5
 
         end
     end
-    save([par.outpath, 'bb',par.fapp])
+    % Save workspace by s,oother
+    % save([par.outpath, 'bb',par.fapp])
 end
 
 close all
@@ -678,7 +769,7 @@ close all
 %{
  0: Moving average
  1: Interpolation smoother CSAPS (DEFAULT)
- 2: Chebyshev nodes with Cheby Regression
+ 2: Polynomial regression with monomial or chebyshev nodes
  3: B-Splines  
  4: HP filter
 %}
@@ -686,7 +777,7 @@ if opt.smorob ==1
     figure(1)
     hAxx = axes;
     boxplot([PPA(:,3),PPA(:,4),PPA(:,1),PPA(:,2),PPA(:,5),PPA(:,6)],...
-        'labels',{'1.Cheby','2.B-Spline','3.MA','4.Cubic','5.HP','6.No Smooth'},'Symbol','')
+        'labels',{'1.PolyReg','2.B-Spline','3.MA','4.Cubic','5.HP','6.No Smooth'},'Symbol','')
     liness = hAxx.Children; % get handles to the lines in the HGGroup object
     uw = findobj(liness, 'tag', 'Upper Whisker');           % get handle to "Upper Whisker" line
     uav = findobj(liness, 'tag', 'Upper Adjacent Value');   %get handle to "Upper Adjacent Value" line
@@ -746,7 +837,7 @@ if opt.smorob ==1
     figure(2)
     hAxx = axes;
     boxplot([PPAT(:,3),PPAT(:,4),PPAT(:,1),PPAT(:,2),PPAT(:,5),PPAT(:,6)],...
-        'labels',{'1.Cheby','2.B-Spline','3.MA','4.Cubic','5.HP','6.No Smooth'},'Symbol','')
+        'labels',{'1.PolyReg','2.B-Spline','3.MA','4.Cubic','5.HP','6.No Smooth'},'Symbol','')
     liness = hAxx.Children; % get handles to the lines in the HGGroup object
     uw = findobj(liness, 'tag', 'Upper Whisker');           % get handle to "Upper Whisker" line
     uav = findobj(liness, 'tag', 'Upper Adjacent Value');   %get handle to "Upper Adjacent Value" line
@@ -800,7 +891,7 @@ if opt.smorob ==1
     figure(3)
     hAxx = axes;
     boxplot([PPAO(:,3),PPAO(:,4),PPAO(:,1),PPAO(:,2),PPAO(:,5),PPAO(:,6)],...
-        'labels',{'1.Cheby','2.B-Spline','3.MA','4.Cubic','5.HP','6.No Smooth'},'Symbol','')
+        'labels',{'1.PolyReg','2.B-Spline','3.MA','4.Cubic','5.HP','6.No Smooth'},'Symbol','')
     liness = hAxx.Children; % get handles to the lines in the HGGroup object
     uw = findobj(liness, 'tag', 'Upper Whisker');           % get handle to "Upper Whisker" line
     uav = findobj(liness, 'tag', 'Upper Adjacent Value');   %get handle to "Upper Adjacent Value" line
@@ -907,8 +998,10 @@ dert_stop = 1;
     save(fname,'tp_normTC','-ascii','-double','-tabs');
 %}
 
-
+disp('Saving diary...')
+disp('Diary saved, check /output/diary_SBI.txt')
 disp('End of Routine')
+diary off
 end
 %--------------------------------------------------------------------------
 function [datas,ind_smo]=smooth_ts(data,par,opt)
@@ -921,7 +1014,7 @@ Output:
 Type of smoother
  0: Moving average
  1: Interpolation smoother CSAPS (DEFAULT)
- 2: Chebyshev nodes with Cheby Regression
+ 2: Polynomial regression with monomial or chebyshev basis
  3: B-Splines  
 %}
 % Keep original data:
@@ -954,7 +1047,7 @@ if opt.smooth~=0
             datas.T(IT) = csaps((1:nT)',Taux(IT),par.sp,(1:nT)');
             datas.C(IC) = csaps((1:nC)',Caux(IC),par.sp,(1:nC)');
 
-        elseif opt.type_sth==2 %  Cheby Polynomials with Cheby nodes
+        elseif opt.type_sth==2 %  Polinomial regression, 
             datas.T(IT) = coll((1:nT)',Taux(IT),par,opt);
             datas.C(IC) = coll((1:nC)',Caux(IC),par,opt);
         elseif opt.type_sth==3 % B-Splines
@@ -976,16 +1069,6 @@ end
 %-------------------------------------------------------------------------
 function [o_vals]=norm_func(data,par,opt)
 close all
-
-
-%{
-figure(100)
-hold on
-plot(data.CO,'bx')
-plot(data.C,'b--')
-plot(data.TO,'rx')
-plot(data.T,'r--')
-%}
 
 
 
@@ -1010,9 +1093,9 @@ par.tvec_c_long = (1:par.nt_long)';
 
 % Initial guess for mapping parameters
 %{
-phi(1): Magnitude Shifter
-phi(2): Time Shifter
-phi(3): Speed Shifter
+psi(1): Magnitude Shifter
+psi(2): Time Shifter
+psi(3): Speed Shifter
 %}
 %% Mapping C to T
 
@@ -1020,36 +1103,19 @@ m_guess_lv = par.m_guess_lv;
 m_guess_ts = par.m_guess_ts;
 
 
-% Activar cuando es a manubrio
+% Activar when debugging
 %{
 opt.CT = 1;
-[cf.phiCT,cf.omCT,x0] = make_x(data,opt,m_guess_lv,m_guess_ts,par); 
+[cf.psiCT,cf.omCT,x0] = make_x(data,opt,m_guess_lv,m_guess_ts,par); 
 func_df(x0,data.T,data.C,opt,par)
 dert_debug = 1;
 %}
 opt.CT = 1;
-[cf.phiCT,cf.omCT,x0] = make_x(data,opt,m_guess_lv,m_guess_ts,par);
+[cf.psiCT,cf.omCT,x0] = make_x(data,opt,m_guess_lv,m_guess_ts,par);
 
 
-if opt.sgues==1
-    if par.nmts==3 && par.nmlv==2
-        [x0,~,~] = fmincon(@(x)func_df(x,data.T,data.C,opt,par),x0,[],[],[],[],[-Inf,0,-Inf,eps,eps],[Inf,Inf,Inf,Inf,Inf],[],opt.sol_fmin);
-    elseif par.nmts==3 && par.nmlv==1
-        [x0,~,~] = fmincon(@(x)func_df(x,data.T,data.C,opt,par),x0,[],[],[],[],[0,-Inf,eps,eps],[Inf,Inf,Inf,Inf],[],opt.sol_fmin);
-
-    elseif par.nmts==2 && par.nmlv==2
-        if par.rphi==1
-            x0 = [x0(1),x0(2),x0(4)];
-            [x0,~,~] = fmincon(@(x)func_df(x,data.T,data.C,opt,par),x0,[],[],[],[],[-Inf,0,eps],[Inf,Inf,Inf],[],opt.sol_fmin);
-        else
-            [x0,~,~] = fmincon(@(x)func_df(x,data.T,data.C,opt,par),x0,[],[],[],[],[-Inf,0,-Inf,-Inf],[Inf,Inf,Inf,Inf],[],opt.sol_fmin);
-        end
-    elseif par.nmts==2 && par.nmlv==1
-        [x0,~,~] = fmincon(@(x)func_df(x,data.T,data.C,opt,par),x0,[],[],[],[],[0,-Inf,-Inf],[Inf,Inf,Inf],[],opt.sol_fmin);
-    end
-end
 try
-    if par.nmlv==2 && par.rphi==1
+    if par.nmlv==2 && par.rpsi==1
         if size(x0,2)==3
             % nothing, the guess was updated
         else
@@ -1077,13 +1143,13 @@ if eflagCT==0
 end
 if par.nmlv==1
     cf.omCT = [0,xCT(1:par.nmlv)];
-    cf.phiCT = xCT(par.nmlv+1:end);
+    cf.psiCT = xCT(par.nmlv+1:end);
 else
     cf.omCT = xCT(1:par.nmlv);
-    if par.nmlv==2 && par.rphi==1
-        cf.phiCT = [xCT(1:2),0,xCT(par.nmlv+1:end)];
+    if par.nmlv==2 && par.rpsi==1
+        cf.psiCT = [0,xCT(par.nmlv+1:end)];
     else
-        cf.phiCT = xCT(par.nmlv+1:end);
+        cf.psiCT = xCT(par.nmlv+1:end);
     end
 end
 
@@ -1095,36 +1161,23 @@ if nmatched<par.min_match
 end
 
 
-tu_norm = func_stage(par.tu,cf.phiCT,0,par);
+tu_norm = func_stage(par.tu,cf.psiCT,0,par);
 tp_normCT_1 = interp1(par.tvec_c_long,par.time_long,tu_norm); % Convert to time units
-aux1=func_stage(par.tu,cf.phiCT,1,par);
+aux1=func_stage(par.tu,cf.psiCT,1,par);
 tp_normCT_2 = interp1(par.tvec_c_long,par.time_long,aux1);
 
 %% Mapping T to C
 opt.manual_guess = 1;
 if par.nmts == 3
-    m_guess_ts = [-cf.phiCT(1)/cf.phiCT(2) ,1/cf.phiCT(2),0];
+    m_guess_ts = [-cf.psiCT(1)/cf.psiCT(2) ,1/cf.psiCT(2),0];
     m_guess_lv = [-cf.omCT(1),1/cf.omCT(2)];
 else
-    m_guess_ts = [-cf.phiCT(1)/cf.phiCT(2) ,1/cf.phiCT(2)];
+    m_guess_ts = [-cf.psiCT(1)/cf.psiCT(2) ,1/cf.psiCT(2)];
     m_guess_lv = [-cf.omCT(1)/cf.omCT(2),1/cf.omCT(2)];
 end
 opt.CT = 0;
-[cf.phiTC,cf.omTC,x0] = make_x(data,opt,m_guess_lv,m_guess_ts,par);
-%{
-if opt.sgues ==1
-    if par.nmts==3 && par.nmlv==2    
-       [x0,~,~] = fmincon(@(x)func_df(x,data.T,data.C,opt,par),x0,[],[],[],[],[-Inf,0,-Inf,eps,eps],[Inf,Inf,Inf,Inf,Inf],[],opt.sol_fmin);
-    elseif par.nmts==3 && par.nmlv==1  
-       [x0,~,~] = fmincon(@(x)func_df(x,data.T,data.C,opt,par),x0,[],[],[],[],[0,-Inf,eps,eps],[Inf,Inf,Inf,Inf],[],opt.sol_fmin);
+[cf.psiTC,cf.omTC,x0] = make_x(data,opt,m_guess_lv,m_guess_ts,par);
 
-    elseif par.nmts==2 && par.nmlv==2  
-       [x0,~,~] = fmincon(@(x)func_df(x,data.T,data.C,opt,par),x0,[],[],[],[],[-Inf,0,-Inf,eps,eps],[Inf,Inf,Inf,Inf,Inf],[],opt.sol_fmin);
-    elseif par.nmts==2 && par.nmlv==1  
-       [x0,~,~] = fmincon(@(x)func_df(x,data.T,data.C,opt,par),x0,[],[],[],[],[0,-Inf,eps],[Inf,Inf,Inf],[],opt.sol_fmin);
-    end
-end
-%}
 try
     [xTC,fvalTC,eflagTC] = fminunc(@func_df,x0,opt.sol,data.C,data.T,opt,par);
 catch
@@ -1140,36 +1193,63 @@ if eflagTC==0
 end
 if par.nmlv==1
     cf.omTC = [0,xTC(1:par.nmlv)];
-    cf.phiTC = xTC(par.nmlv+1:end);
+    cf.psiTC = xTC(par.nmlv+1:end);
 else
     cf.omTC = xTC(1:par.nmlv);
-    cf.phiTC = xTC(par.nmlv+1:end);
+    cf.psiTC = xTC(par.nmlv+1:end);
 end
 
-aux1=func_stage(par.tu,cf.phiTC,0,par);
+aux1=func_stage(par.tu,cf.psiTC,0,par);
 tp_normTC_1 = interp1(par.tvec_c_long,par.time_long,aux1);
 
-aux1=func_stage(par.tu,cf.phiTC,1,par);
+aux1=func_stage(par.tu,cf.psiTC,1,par);
 tp_normTC_2 = interp1(par.tvec_c_long,par.time_long,aux1);
-aux1=func_stage(par.nt_long,cf.phiTC,0,par);
+aux1=func_stage(par.nt_long,cf.psiTC,0,par);
 tp_normTC_A = interp1(par.tvec_c_long,par.time_long,aux1);
 
-aux1=func_stage(1,cf.phiCT,0,par);
+aux1=func_stage(1,cf.psiCT,0,par);
 yr_init = interp1(par.tvec_c_long,par.time_long,aux1,'linear',NaN);
 if par.iter==0
-    disp(['Coefficients in numerical mapping C to T: ', num2str(cf.phiCT)]);
-    disp(['Coefficients in numerical mapping T to C: ', num2str(cf.phiTC)]);
-    disp('Results from C to T:')
+    if cf.omCT(1)==0
+        aom0 = '0.000'; % Aesthetics
+    else
+        aom0 = num2str(round(cf.omCT(1),3));
+    end
+    disp(['Coefficients in numerical mapping C to T:']);
+    disp(['omega_0 = ',aom0,' omega_1 = ', num2str(round(cf.omCT(2),3))]); 
+    if size(cf.psiCT,2)==3
+        disp(['  psi_0 = ',num2str(round(cf.psiCT(1),3)),'   psi_1 = ',num2str(round(cf.psiCT(2),3)),' psi_2 = ',num2str(round(cf.psiCT(2),3))]);
+    else
+        disp(['  psi_0 = ',num2str(round(cf.psiCT(1),3)),'   psi_1 = ',num2str(round(cf.psiCT(2),3))]);
+    end    
+    disp('..............................................')
+    if cf.omTC(1)==0
+        aom0 = '0.000'; % Aesthetics
+    else
+        aom0 = num2str(round(cf.omTC(1),3));
+    end
+    disp(['Coefficients in numerical mapping T to C:']);
+    disp(['omega_0 = ',aom0,' omega_1 = ', num2str(round(cf.omTC(2),3))]); 
+    if size(cf.psiCT,2)==3
+        disp(['  psi_0 = ',num2str(round(cf.psiTC(1),3)),'   psi_1 = ',num2str(round(cf.psiTC(2),3)),' psi_2 = ',num2str(round(cf.psiTC(2),3))]);
+    else
+        disp(['  psi_0 = ',num2str(round(cf.psiTC(1),3)),'   psi_1 = ',num2str(round(cf.psiTC(2),3))]);
+    end
+    disp('..............................................')
+    disp('Mapping Results from C to T:')
     disp(['Year in ',par.Cname,': ', num2str(par.tp), ' Stage in ',par.Tname,': ', num2str(tp_normCT_1)]);
-    disp(['Year in ',par.Cname,': ', num2str(par.t0), ' Stage in ',par.Tname,': ', num2str(yr_init)]);
-    disp('Results from T to C:')
+    if not(isnan(yr_init))
+         disp(['Year in ',par.Cname,': ', num2str(par.t0), ' Stage in ',par.Tname,': ', num2str(yr_init)]);
+    end
+    disp('Mapping Results from T to C:')
     disp(['Year in ',par.Tname,': ', num2str(par.tp), ' Stage in ',par.Cname,': ', num2str(tp_normTC_1)]);
     disp(['Year in ',par.Tname,': ', num2str(par.t1), ' Stage in ',par.Cname,': ', num2str(tp_normTC_A)]);
+    
 end
 %% Compute Relevant Output:
 % Normalized series
 svec = par.tvec_c_long;
-tvec = func_stage(svec,cf.phiCT(:),0,par);
+tvec = func_stage(svec,cf.psiCT(:),0,par);
 
 time_long_y = interp1(par.tvec_c_long,par.time_long,tvec,'linear',NaN); % Convert to time units
 C_norm = cf.omCT(2).*interp1(tvec(1:par.tu),data.C,par.tvec_c_long,'linear',NaN) + cf.omCT(1);
@@ -1177,21 +1257,22 @@ CO_norm = cf.omCT(2).*interp1(tvec,data.CO,par.tvec_c_long,'linear',NaN) + cf.om
 C_norm_no = cf.omCT(2).*data.CO + cf.omCT(1);
 T_interp = interp1(par.tvec_c_long,data.TO,tvec,'linear',NaN);
 
-tvec_TC = func_stage(svec,cf.phiTC(:),0,par);
+tvec_TC = func_stage(svec,cf.psiTC(:),0,par);
 T_norm_TC = cf.omTC(2).*interp1(tvec_TC(1:par.tu),data.T,par.tvec_c_long,'linear',NaN)+cf.omTC(1);
 TO_norm_TC = cf.omTC(2).*interp1(tvec_TC,data.TO,par.tvec_c_long,'linear',NaN)+cf.omTC(1);
 T_norm_no = cf.omTC(2).*data.TO + cf.omTC(1);
 C_interp = interp1(par.tvec_c_long,data.CO,tvec_TC,'linear',NaN);
 
 if par.iter==0
+    disp('..............................................')
     if opt.openend==1
         I = par.time_long ==ppar.yend;
         if opt.logs==1
-            val_ab = (exp(CO_norm(I))-exp(data.TO(I)))/exp(data.TO(I))*100; % Short for Value Abadie
+            val_ab = (exp(CO_norm(I))-exp(data.TO(I)))/exp(data.TO(I))*100; % For Value Abadie
         else
             val_ab = (CO_norm(I)-data.TO(I))/data.TO(I)*100;
         end
-        disp(['in 2003 (YC-YT)/YT*100= ',num2str(val_ab)])
+        disp(['in ',num2str(ppar.yend),' (YC-YT)/YT*100= ',num2str(val_ab)])
     else
         I = time_long_y == tp_normCT_1;
         if opt.logs==1
@@ -1201,10 +1282,13 @@ if par.iter==0
         end
         disp(['in S(tp) = ',num2str(round(tp_normCT_1,2)),' (YC-YT)/YT*100 = ',num2str(val_ab)])
     end
+    disp('..............................................')
 end
 
 
+
 %{
+% Figures for debugging
 figure(1)
 hold on
 plot(par.tvec_c_long,data.CO,'b-')
@@ -1234,11 +1318,10 @@ plot(par.tvec_c_long,data.TO,'r-')
 In = sum(isnan(CO_norm([par.tu-1,par.tu,par.tu+1])));
 
 pdiff_CT = NaN(size(data.TO));
-ppdiff_CT = NaN(size(data.TO));
 pdiff_CT_int = NaN(size(data.TO));
-pdiff_CT_pre = NaN(size(data.TO));      % Prepolicy gamma
-pdiff_CT_int_pre = NaN(size(data.TO));  % Prepolicy interpolated gamma
-tp_normCT_3=func_stage(par.tu,cf.phiCT,0,par);
+pdiff_CT_pre = NaN(size(data.TO));      % 'Pre'policy gamma
+pdiff_CT_int_pre = NaN(size(data.TO));  % 'Pre'policy interpolated gamma
+tp_normCT_3=func_stage(par.tu,cf.psiCT,0,par);
 if tp_normCT_3>size(data.TO,1)
     % Extreme case
     if opt.warn ==1
@@ -1250,17 +1333,13 @@ end
 
 % Flag to fish for outliers
 flag_out = 1; % 1: outlier(flip etc...)
-flag_out_flip = 0;
+flag_out_flip = 0; 
 flag_out_sign = 0;
 flag_out_nons = 0;
-if In==0 && abs(cf.phiCT(2))<5000
+if In==0 && abs(cf.psiCT(2))<5000
 
     %% Estimated Policy Effect
-    if opt.logs==1
-        ppdiff_CT = (exp(data.TO)-exp(CO_norm))./exp(CO_norm);
-    else
-        ppdiff_CT = ((data.TO)-(CO_norm))./(CO_norm);
-    end
+
 
     % For interpolated T
     Iaux = (tvec - par.tu)>0; % not larger or equal cuz if equal I the effect of the first day =0
@@ -1290,7 +1369,7 @@ if In==0 && abs(cf.phiCT(2))<5000
             unb = trapz(aux_data(1:ii,1),aux_data(1:ii,3));   % Area under blue (non-reference)
         end
         pdiff_CT_alt(ii) = (unr-unb)/unb;
-        % Lets asign it the position it deserves for the graph
+        % Assigning the position it corresponds for the graph
         I = aux_data(ii,1)==tvec;
         if sum(I)==1
             pdiff_CT_int(I)=pdiff_CT_alt(ii);
@@ -1300,15 +1379,16 @@ if In==0 && abs(cf.phiCT(2))<5000
         end
     end
     olp_CT = tp_normCT_1-par.tp;
+
     if olp_CT<=0
         gammarCT = NaN;
         LS_CT = NaN;
-        DLS_CT = NaN; % Stagely
+        DLS_CT = NaN; %  Effect by Stage
         ind_del = 1;
     else
         gammarCT = pdiff_CT_alt(end);
         LS_CT = unr-unb;
-        DLS_CT = LS_CT/olp_CT; % Stagely
+        DLS_CT = LS_CT/olp_CT; % Effect by Stage
 
 
         %% Pre-policy (Not Gamma)
@@ -1356,7 +1436,7 @@ if In==0 && abs(cf.phiCT(2))<5000
     end
     % Normalize fvalCT
 
-    aux_Cnorm = cf.phiCT(2).*interp1(tvec(1:par.tu),data.C(1:par.tu),svec(1:par.tu),'linear',NaN)+cf.phiCT(1);
+    aux_Cnorm = cf.psiCT(2).*interp1(tvec(1:par.tu),data.C(1:par.tu),svec(1:par.tu),'linear',NaN)+cf.psiCT(1);
     avT = mean(data.TO(1:par.tu)); % Average deaths in reference region
     I = not(isnan(aux_Cnorm));
     numpoCT = sum(I);  % Number of matcheed points
@@ -1383,7 +1463,7 @@ if In==0 && abs(cf.phiCT(2))<5000
         flag_out_flip = 1;
     end
     if LS_CT>=0
-        %flag_out = 1; % I should not restric these.
+        %flag_out = 1; % I should not restrict these.
         flag_out_sign = 1;
     end
     if eflagCT<=0
@@ -1406,7 +1486,7 @@ In = sum(isnan(TO_norm_TC([par.tu-1,par.tu]))); % Otherwise I cannot compute pol
 % Same as gamma
 pdiff_TC = NaN(size(data.TO));
 pdiff_TC_int = NaN(size(data.TO));
-tp_normTC_3=func_stage(par.tu,cf.phiTC,0,par);
+tp_normTC_3=func_stage(par.tu,cf.psiTC,0,par);
 if tp_normTC_3<1
     % Extreme case
     if opt.warn ==1
@@ -1414,7 +1494,7 @@ if tp_normTC_3<1
     end
     tp_normTC_3 = 2;
 end
-aux1=func_stage(par.tu,cf.phiTC,0,par);
+aux1=func_stage(par.tu,cf.psiTC,0,par);
 if aux1<1
     if opt.warn ==1
         warning('ERROR: Detected extreme case TC')
@@ -1437,7 +1517,7 @@ if (par.tu)>=fpos
     In = 1;
 end
 
-if In==0 && abs(cf.phiTC(2))<5000
+if In==0 && abs(cf.psiTC(2))<5000
 
     %% Estimated Policy Effect
 
@@ -1468,7 +1548,7 @@ if In==0 && abs(cf.phiTC(2))<5000
     if olp_TC<=0
         gammarTC = NaN;
         LS_TC = NaN;
-        DLS_TC = NaN; % Stagely
+        DLS_TC = NaN; % Effects by Stage
         ind_del = 1;
     else
         try
@@ -1477,18 +1557,17 @@ if In==0 && abs(cf.phiTC(2))<5000
             dert_stop=1;
         end
         LS_TC = unb-unr;
-        DLS_TC = LS_TC/olp_TC; % Stagely
+        DLS_TC = LS_TC/olp_TC; % Effects by Stage
     end
 
-    aux_Tnorm = cf.phiTC(1).*interp1(tvec_TC(1:par.tu),data.T(1:par.tu),svec(1:par.tu),'linear',NaN);
-    avC = mean(data.CO(1:par.tu)); % Average deaths in reference region
+    aux_Tnorm = cf.psiTC(1).*interp1(tvec_TC(1:par.tu),data.T(1:par.tu),svec(1:par.tu),'linear',NaN);
+    avC = mean(data.CO(1:par.tu));      % Average pre-policy outcome in reference region
     I = not(isnan(aux_Tnorm));
-    numpoTC = sum(I);  % Number of matched points
-    fvalTC =  fvalTC./(avC.*numpoTC); % Normalize it:
+    numpoTC = sum(I);                   % Number of matched points
+    fvalTC =  fvalTC./(avC.*numpoTC);   % Normalize it:
 
 else
-    %I = not(isnan(ln_gdpn_rest_sc));
-
+    
     gammarTC = NaN;
     olp_TC = NaN;
     LS_TC = NaN;
@@ -1499,10 +1578,15 @@ end
 
 % Display Policy effects:
 if par.iter==0
+    disp('..............................................')
+    disp('Results: ')
     disp(['Policy Effect C to T: ',num2str(round(gammarCT,3))])
     disp(['Policy Effect T to C: ',num2str(round(gammarTC,3))])
+    disp('..............................................')
+    disp('Convergence Check: ')
     disp(['fvalCT  : ',num2str(fvalCT)])
     disp(['fvalTC  : ',num2str(fvalTC)])
+    disp('..............................................')
 end
 
 
@@ -1514,7 +1598,7 @@ if III==1
     tu_norm = par.nt-1;
 end
 if II ==1
-    o_vals.flagCT = 'Algorithm Didnt Converge';
+    o_vals.flagCT = 'Algorithm didnt converge';
 end
 
 if  II==1 || III==1
@@ -1563,7 +1647,7 @@ else
     o_vals.olpCT = olp_CT;
     o_vals.pol_estiCT = gammarCT;
     o_vals.LS_CT = LS_CT;
-    o_vals.psi_estiCT = cf.phiCT;
+    o_vals.psi_estiCT = cf.psiCT;
     o_vals.om_estiCT = cf.omCT;
     o_vals.tp_normCT  = tp_normCT_1;
     o_vals.fp_norm  = yr_init;
@@ -1598,7 +1682,7 @@ if  III==1
     tu_norm = 2;
 end
 if II ==1
-    o_vals.flagTC = 'Algorithm Didnt Converge';
+    o_vals.flagTC = 'Algorithm didnt converge';
 end
 
 if  II==1 || III==1
@@ -1624,7 +1708,7 @@ else
     o_vals.olpTC = olp_TC;   %par.tp-tp_normTC_1;
     o_vals.pol_estiTC = gammarTC;
     o_vals.LS_TC = LS_TC;
-    o_vals.psi_estiTC = cf.phiTC;
+    o_vals.psi_estiTC = cf.psiTC;
     o_vals.om_estiTC = cf.omTC;
     o_vals.tp_normTC  = tp_normTC_1;
     o_vals.fvalTC =  fvalTC;
@@ -1651,10 +1735,10 @@ if par.vis_ind ==1
 
 
     % Generate title:
-    aosCT = sprintf('%.2f,' , [cf.phiCT]);
+    aosCT = sprintf('%.2f,' , [cf.omCT,cf.psiCT]);
     aosCT = aosCT(1:end-1);  % strip final comma
 
-    aosTC = sprintf('%.2f,' , [cf.phiTC]);
+    aosTC = sprintf('%.2f,' , [cf.omTC,cf.psiTC]);
     aosTC = aosTC(1:end-1);  % strip final comma
 
     %% Mapping Function
@@ -1722,7 +1806,7 @@ if par.vis_ind ==1
     ylabel(par.outcome_name,'interpreter','latex','FontSize',opt.fz2)
     xlabel('Stage','interpreter','latex','FontSize',opt.fz2)
     %title(['Policy Effect: ',num2str(round(gammarCT,3)),' MinError: ',num2str(fvalCT)],'FontSize',opt.fz1-2)
-    %subtitle(['Phis: ',num2str(cf.phiCT(1)),', ',num2str(cf.phiCT(2)),', ',num2str(cf.phiCT(3))],'FontSize',opt.fz1-2)
+    %subtitle(['psis: ',num2str(cf.psiCT(1)),', ',num2str(cf.psiCT(2)),', ',num2str(cf.psiCT(3))],'FontSize',opt.fz1-2)
     print('-depsc',[par.outpath,'f3_', par.fapp, '.eps']);
     saveas(f3,[par.outpath,'f3_', par.fapp, '.png']);
     hold off
@@ -2067,19 +2151,19 @@ if par.vis_ind ==1
 end % End of figures
 end
 %---------------------------------------------------------------------------
-function [pphi,pom,x] = make_x(data,opt,mlv,mts,par)
+function [ppsi,pom,x] = make_x(data,opt,mlv,mts,par)
 % Creates Coefficient guesses
 if opt.manual_guess==1
-    pphi = mts;
+    ppsi = mts;
     pom = mlv;
     if size(pom,2)==2
         if par.nmlv==1
-            x = [pom(2),pphi];
+            x = [pom(2),ppsi];
         else
-            x = [pom,pphi];
+            x = [pom,ppsi];
         end
     else
-        x = [pom,pphi];
+        x = [pom,ppsi];
     end
 
 
@@ -2087,24 +2171,24 @@ else %opt.manual_guess == 2
     pg = pol_guess(par,data);
     pom(1,1)  = 0; % Om0
     pom(1,2)  = pg(1); % Om1
-    pphi(1,1) = pg(2); % Phi0
-    pphi(1,2) = pg(3); % Phi1
+    ppsi(1,1) = pg(2); % psi0
+    ppsi(1,2) = pg(3); % psi1
     if par.nmts ==3
-        pphi(1,3) = 0; % Phi3 % Quadratic term
+        ppsi(1,3) = 0; % psi3 % Quadratic term
     end
     if par.nmlv==1
-        x = [pom(2),pphi];
+        x = [pom(2),ppsi];
     else
-        x = [pom,pphi];
+        x = [pom,ppsi];
     end
 end
 
 
 end
 % -------------------------------------------------------------------------
-function [fv,pophi,nt] = func_df(x,dta_T,dta_C,opt,par)
+function [fv,popsi,nt] = func_df(x,dta_T,dta_C,opt,par)
 % Distance function
-[dist,~,~,~,pophi] = func_dist(x,dta_T,dta_C,opt,par);
+[dist,~,~,~,popsi] = func_dist(x,dta_T,dta_C,opt,par);
 
 nt = length(dist);
 if (opt.wght==1)
@@ -2120,22 +2204,22 @@ fv = 0.5*(wdist')*wdist;  % Euclidean distance to the ^2
 
 end
 % -------------------------------------------------------------------------
-function [dist,pred_C_sc,svec,tvec,pophi] = func_dist(x,dta_T,dta_C,opt,par)
+function [dist,pred_C_sc,svec,tvec,popsi] = func_dist(x,dta_T,dta_C,opt,par)
 % get the coefficients
 if par.nmlv==1
-    pophi = [0,x];
+    popsi = [0,x];
 else
-    if par.nmlv==2 && par.rphi==1
-        pophi = [x(1:2),0,x(3)];
+    if par.nmlv==2 && par.rpsi==1
+        popsi = [x(1:2),0,x(3)];
     else
-        pophi = x;
+        popsi = x;
     end
 end
 
 
 % stage vector corresponding to time before unification
 svec = (1:par.tu)';                   % time=stage in T
-tvec = func_stage(svec,pophi(3:end),0,par);    % corresponding time in C
+tvec = func_stage(svec,popsi(3:end),0,par);    % corresponding time in C
 
 
 % Predicted scaled values in RO_XX with basic trimming according to C:
@@ -2160,7 +2244,7 @@ catch
 end
 
 % add the scaling factor
-pred_C_sc = pophi(2).*pred_C_sc+pophi(1);
+pred_C_sc = popsi(2).*pred_C_sc+popsi(1);
 
 
 II = isnan(pred_C_sc);
@@ -2193,12 +2277,12 @@ dert_debug = 1;
 
 end
 % -------------------------------------------------------------------------
-function y = func_stage(x,pphi,back,par)
+function y = func_stage(x,ppsi,back,par)
 if back ==0 % in years of C
-    y = pphi(1);
+    y = ppsi(1);
     for i = 3:(par.nmts+1)
         try
-            y = y + (x.^(i-2)).*pphi(i-1);
+            y = y + (x.^(i-2)).*ppsi(i-1);
         catch
             dert = 1;
         end
@@ -2206,7 +2290,7 @@ if back ==0 % in years of C
 else % in years of T
     % Could Compute the inverse, but too comversome
 
-    y = x./pphi(2)- pphi(1);
+    y = x./ppsi(2)- ppsi(1);
 end
 
 end
@@ -2258,56 +2342,8 @@ dert_stop = 1;
 
 
 end
-%--------------------------------------------------------------------------
-function [theta_guess,fx] = guess_theta(x_data,y_data,par,opt)
-% To find a guess for theta I do the following:
-% I fit a polinomial to the data, with this I get continous values.
-% Then I use thos values to solve for analytical thetas which are my guess:
-%
-
-x_max = max(x_data);
-x_min = min(x_data);
-zi = cheb_roots(par.m);
-% Step 5: Convert nods to x interval x_max,x_min
-knots = (sec(pi/(2*par.m))*zi+1)/2*(x_max-x_min)+x_min;
-
-fx = csaps(x_data,y_data,par.sp,knots);
-%fx_func = spap2(par.m,par.n+10,x_data,y_data);
-%fx = fnval(fx_func,knots);
-theta_guess = NaN(par.n,1);
-val_aux = NaN(par.m,1);
-% Here I compute the analitical thetas accordinf to Nakajima:
-Taux = Tox(par.n-1,zi);
-for j = 1:par.n
-    if j ==1
-        theta_guess(j) = 1/par.m*(sum(fx));
-    else
-        for i = 1:par.m
-            %val_aux(i) = fx(i).*chebyshevT(j-1,zi(i));
-            %val_aux(i) = fx(i).*Tox(j-1,zi(i));
-            val_aux(i) = fx(i).*Taux(i,j);
-        end
-        I = isnan(val_aux);
-        if sum(I)>0
-            disp('some error on polinomial')
-        end
-        theta_guess(j) = (2/par.m)*sum(val_aux);
-    end
-end
-
-
-
-%{
-dert_debug = 1;
-figure(101)
-hold on
-plot(x_data,y_data,'k-o','markerfacecolor','k','linewidth',0.5)
-plot(knots,fx,'b-','linewidth',1.1)
-%plot(knots,gx,'rx-','linewidth',1.1)
-%}
-end
 %--------------------------------------------------------------
-function T = Tox(or,x)
+function T = Tox(n,x)
 %{
 Manual Chabyshev polinomials, cuz its faster:
 %}
@@ -2332,7 +2368,7 @@ Manual Chabyshev polinomials, cuz its faster:
         val = 128*(x^8)-256*(x^6)+160*(x^4)-32*(x^2)+1;
     end
 %}
-n = or+1;
+
 m = length(x);
 T = ones(m, 1);
 dT = zeros(m,1);
@@ -2351,6 +2387,40 @@ end
 
 end
 %--------------------------------------------------------------------------
+function [cf,bbeta]=coll(x_data,y_data,par,opt)
+% Polynomial regression 
+
+% Transformation into [-1,1] interval:
+% t=1 -> z=-1
+% t=T -> z=1
+% t = a + b*z <=> z = (t-a)/b
+% 1 = a + b*(-1) = a-b <=> b = a-1
+% T = a + b*1 = a+b => T = a + a - 1 <=> a = (T+1)/2 => b = (T+1)/2-1
+
+nt = x_data(end);
+a = (nt+1)/2;
+b = a-1;
+zvec = (x_data-a)/b;
+
+if opt.cb == 0
+    % monomial basis
+    mb = ones(nt,1);
+    for cc=2:par.n
+        mb = [mb, zvec.^(cc-1)];
+    end
+    bbeta = mb\y_data;
+    cf= mb*bbeta; 
+else
+
+    % regression with chebychev basis:
+    cb = Tox(par.n,zvec);
+    bbeta = cb\y_data;
+    cf= cb*bbeta; 
+end
+
+
+end
+%--------------------------------------------------------------------------
 function [roots_vec] = cheb_roots(m)
 %{
 Computes the roots of the chebychev polinomial of order m
@@ -2360,144 +2430,47 @@ roots_vec = -cos((2.*i_aux-1).*pi./(2*m));
 
 end
 %--------------------------------------------------------------------------
-function [fv,chebyval] =  dist_cheby(theta,x_data,y_data,par,opt)
-% Evaluate the Cheby polinomial
-
-
-% Step 1:
-x_max = max(x_data);
-x_min = min(x_data);
-% Step 2: Pick the order of the Chebyshev Polinomial
-n = par.n;
-nobs = size(x_data,1);
-% Step 3: Pick the number of Collocation points
-m = par.m;  %par.nobs;% Number of collocation points same as order or more
-
-% Compute solution thetas, I need data counterpart to do this:
-% So I just evaluate the Polinomial
-% Convert data points x to -1,1
-zi = (1/sec(pi/(2*m))).*(((2*(x_data-x_min))/(x_max-x_min))-1);
-
-cheby_poli = NaN(n,nobs);
-Taux = Tox(n-1,zi);
-for i = 1:n
-    for ii = 1:nobs
-        %cheby_poli(i,ii) = theta(i)*chebyshevT(i-1,zi(ii));
-        %cheby_poli(i,ii) = theta(i)*Tox(i-1,zi(ii));
-        cheby_poli(i,ii) = theta(i)*Taux(ii,i);
-    end
-end
-
-%z = ((sec(pi/(2*par.m))*roots_vec+1)./2)*(z_max-z_min)+z_min;
-%z = (1/sec(pi/(2*m))).*(((2*(x_data-x_min))/(x_max-x_min))-1);
-
-I = isnan(cheby_poli);
-if sum(I,'all')>0
-    disp('Something wrong is happening')
-end
-chebyval = sum(cheby_poli,1)';
-% Get the difference:
-I = not(isnan(chebyval));
-dist = y_data(I) - chebyval(I);
-
-if isempty(dist)
-    disp('Why is dist empty')
-    dist = 10e10;
-end
-
-wdist = dist;
-
-% if opt.placebo==1
-%    wght = ones(size(wdist));
-%    %wght(end-9) = 80.0;
-%    wght(end-10) = 80.0;
-%    %wght(end-3) = 80.0;
-%    wght(1) = 80.0;
-
-%    wght(end) = 100.0;
-%    wdist = wght.*dist;
-%end
-
-fv = 0.5*(wdist')*wdist;
-
-end
-%--------------------------------------------------------------------
-function [cf,theta_sol,fval]=coll(x_data,y_data,par,opt)
-%{
-x, y = data input, does not allow for missing values
-n = degree of the polinomial n_pol-1 = order of the polinomial
-
-%}
-
-
-% Guess theta (Cheby Coeffs)
-
-[theta_x0,~] = guess_theta(x_data,y_data,par,opt);
-
-if opt.constr ==1
-    [theta_sol,fval,ef] =  fminunc(@(theta) dist_cheby(theta,x_data,y_data,par,opt),theta_x0,opt.optmin);
-    [theta_sol,fval,ef] =  fmincon(@(theta) dist_cheby(theta,x_data,y_data,par,opt),theta_sol,[],[],[],[],[-Inf,-Inf,-Inf],[Inf,Inf,-eps],[],opt.sol_fmin);
-    dert_stop = 1;
-else
-    [theta_sol,fval,ef] =  fminunc(@(theta) dist_cheby(theta,x_data,y_data,par,opt),theta_x0,opt.optmin);
-end
-[~,cf] = dist_cheby(theta_sol,x_data,y_data,par);
-
-end
-%--------------------------------------------------------------------------
-
-%--------------------------------------------------------------------------
 
 function pg = pol_guess(par,data)
-% This fits a polinomial prepolicy and uses the analitical coefficients as
-% guesses
-% Chooses the guess with positive phi(2)
-%par.time = par.tvec_c;
-
-
+% Fits a polinomial prepolicy and uses the analitical coefficients as guesses
+% Chooses the guess with positive psi(2)
 
 I = par.time<=par.tp;
 par.tu = sum(I);   % Position of policy date
 % stage vector corresponding to time before unification
-par.time = (1:par.tu)';                   % time=stage in T
-%tvec = func_stage(svec,pphi(:),0,par);    % corresponding time in C
+par.time = (1:par.tu)';                    % time=stage in T
 
 pDC = polyfit(par.time(1:par.tu),data.C(1:par.tu),par.nmts);
 pDT = polyfit(par.time(1:par.tu),data.T(1:par.tu),par.nmts);
 
-%par.time = 1:par.tu+3;
+
 
 auxDC = polyval(pDC,par.time(1:par.tu));
 auxDT = polyval(pDT,par.time(1:par.tu));
 
 
 if par.nmts==3
-    phi = an_pol1(pDC(2:end),pDT(2:end));
+    psi = an_pol1(pDC(2:end),pDT(2:end));
 else
-    phi = an_pol1(pDC(1:end),pDT(1:end));
+    psi = an_pol1(pDC(1:end),pDT(1:end));
 end
 
 
-pa.phi1 = phi(2); % choose this because it gives a positive phi2
-pa.phi2 = phi(3);
-pa.phi0 = phi(1);
+pa.psi1 = psi(2); % choose this because it gives a positive psi2
+pa.psi2 = psi(3);
+pa.psi0 = psi(1);
 
 
-pg(1) = 1/pa.phi0;
-pg(2) = -pa.phi1/pa.phi2;
-pg(3) = 1/pa.phi2;
+pg(1) = 1/pa.psi0;
+pg(2) = -pa.psi1/pa.psi2;
+pg(3) = 1/pa.psi2;
 
 if abs(pg(2))>2*par.nt
-    %if opt.CT==1
+   
     pg(1) = 0.8;
-    pg(2) = 2; % choose this because it gives a positive phi2
+    pg(2) = 2; % choose this because it gives a positive psi2
     pg(3) = 1;
 
-    %else
-    %pg(2) = -6; % choose this because it gives a positive phi2
-    %pg(3) = 1;
-    %pg(1) = 0.8;
-    %end
     if par.iter==0
         disp('Using default guess instead of polinomial guess')
     end
@@ -2527,8 +2500,9 @@ dert_stop = 1;
 
 end
 %--------------------------------------------------------------------------
-function phi = an_pol1(pDC,pDT)
-% Normalize analically
+function psi = an_pol1(pDC,pDT)
+
+% Normalize analically polynomial of degree 3, outputs the coeficients
 pa.A = (pDT(1)*pDC(2))/(pDC(1)*pDT(2));
 pa.B = (pDT(1)*2)/pDT(2);
 pa.C = pDT(2)/pDT(3);
@@ -2539,123 +2513,36 @@ pa.c3 = 2*pDC(1)*pa.B-pDC(1)*pa.C;
 
 rvals = roots([pa.c3,pa.c2,pa.c1]);
 
-pa.phi1 = rvals(2); % choose this because it gives a positive phi2
-pa.phi2 = pa.A+pa.B*pa.phi1;
-pa.phi0 = (pa.phi2^2)*pDC(1)/pDT(1);
+pa.psi1 = rvals(2); % choose this because it gives a positive psi2
+pa.psi2 = pa.A+pa.B*pa.psi1;
+pa.psi0 = (pa.psi2^2)*pDC(1)/pDT(1);
 
-if pa.phi2<0
-    pa.phi1 = rvals(1); % choose this because it gives a positive phi2
-    pa.phi2 = pa.A+pa.B*pa.phi1;
-    pa.phi0 = (pa.phi2^2)*pDC(1)/pDT(1);
+if pa.psi2<0
+    pa.psi1 = rvals(1); % choose this because it gives a positive psi2
+    pa.psi2 = pa.A+pa.B*pa.psi1;
+    pa.psi0 = (pa.psi2^2)*pDC(1)/pDT(1);
 end
 
-if pa.phi2<0
-    %if opt.CT==1
-    pa.phi0 = 1.1;
-    pa.phi1 = -6; % choose this because it gives a positive phi2
-    pa.phi2 = 1;
+if pa.psi2<0
 
-    %else
-    %pa.phi1 = 6; % choose this because it gives a positive phi2
-    %pa.phi2 = 1;
-    %pa.phi0 = 0.9;
-    %end
-    %if par.iter==0
+    pa.psi0 = 1.1;
+    pa.psi1 = -6; % choose this because it gives a positive psi2
+    pa.psi2 = 1;
+
+  
     disp('Polinomial guess failed: using default guess')
-    %end
+ 
 end
 
-phi(1) = pa.phi0;
-phi(2) = pa.phi1;
-phi(3) = pa.phi2;
+psi(1) = pa.psi0;
+psi(2) = pa.psi1;
+psi(3) = pa.psi2;
 end
-%------------------------------------------------------------------------
-function [om,phi] = an_pol2(tau,time,data,inc)
-par.tu = tau;
-auxDC = data.C(1:par.tu,1);
-auxDT = data.T(1:par.tu);
-
-[lgth,~] = size(time);
-par.time = (1:1:lgth);
-pDC = polyfit(par.time(1:par.tu),auxDC,3);
-pDT = polyfit(par.time(1:par.tu),auxDT,3);
-
-phi1 = an_pol1(pDC(2:end),pDT(2:end));
-
-ain(4) = pDC(1);
-ain(3) = pDC(2);
-ain(2) = pDC(3);
-ain(1) = pDC(4);
-
-bin(4) = pDT(1);
-bin(3) = pDT(2);
-bin(2) = pDT(3);
-bin(1) = pDT(4);
-
-%par.time = time;
-x0 = [phi1,0];
-%x0 = [1,1,1,0];
-psi_sol3 = fsolve(@(x) foc_ap2(x,ain,bin,tau,inc),x0);
-
-time_norm = psi_sol3(2)+par.time.*psi_sol3(3)+(par.time.^2).*psi_sol3(4);
-pI = polyfit(time_norm,par.time,2);
-
-%time_norm2 = pI(3)+par.time.*pI(2)+(par.time.^2).*pI(1);
-phi_aux(1) = psi_sol3(1);
-phi_aux(2) = pI(3);
-phi_aux(3) = pI(2);
-phi_aux(4) = pI(1);
-
-om(1) = 0;
-om(2) = phi_aux(1);
-phi(1) = phi_aux(2);
-phi(2) = phi_aux(3);
-phi(3) = phi_aux(4);
-
-end
-%---------------------------------------------------------------------------
-function diff = foc_ap2(xin,ain,bin,tau,inc)
-
-x0 = xin(1);
-x1 = xin(2);
-x2 = xin(3);
-x3 = xin(4);
 
 
-a0 = ain(1);
-a1 = ain(2);
-a2 = ain(3);
-a3 = ain(4);
-
-b0 = bin(1);
-b1 = bin(2);
-b2 = bin(3);
-b3 = bin(4);
-
-
-yc = @(t) x0*(a0+a1*(x1+x2*t)+a2*((x1+x2*t)^2)+a3*((x1+x2*t)^3));
-yt = @(t) b0+b1*t+b2*(t^2)+b3*(t^3);
-f2 = @(t) a1+a2*2*x1+a2*2*x2*t+2*x3*a2*(t^2)+a3*(3*(x1^2)+6*x1*x2*t...
-    +6*x1*x3*(t^2)+(x2^2)*(t^2)+6*x2*x3*(t^3)+3*(x3^2)*(t^4));
-f3 = @(t) a1*t+a2*2*x1*t+a2*2*x2*(t^2)+a2*2*x3*(t^3)+a3*(3*(x1^2)*t...
-    +6*x1*x2*(t^2)+3*(x2^2)*(t^3)+6*x1*x3*(t^3)+6*x2*x3*(t^4)+3*(x3^2)*(t^5));
-f4 = @(t) a1*(t^2)+a2*2*x1*(t^2)+a2*2*x2*(t^3)+a2*x3*2*(t^4)...
-    +a3*(3*(x1^2)*(t^2)+6*x1*x2*(t^3)+3*(x2^2)+6*x1*x3*(t^4)+6*x2*x3*(t^5)+3*(x3^2)*(t^6));
-
-diff(1) = 0;
-diff(2) = 0;
-diff(3) = 0;
-diff(4) = 0;
-
-for i = 0:(tau-inc)
-    diff(1) = diff(1)+((yc(i)-yt(i))*yc(i)/x0);    % foc1 (\phi0)
-    diff(2) = diff(2)+((yc(i)-yt(i))*f2(i));       % foc2 (\phi1)
-    diff(3) = diff(3)+((yc(i)-yt(i))*f3(i));       % foc3 (\phi2)
-    diff(4) = diff(4)+((yc(i)-yt(i))*f4(i));       % foc4 (\phi3)
-end
-end
 %--------------------------------------------------------------------------
-function [om,phi] = an_pol3(tau,time,data)
+function [om,psi] = an_pol3(tau,time,data)
+% Fit and normalize a polynomial degree 4
 par.tu = tau;
 auxDC = data.C(1:par.tu,1);
 auxDT = data.T(1:par.tu);
@@ -2678,8 +2565,8 @@ alt_w0 = pDT(1)-(alt_w1*(pDC(1)+pDC(2)*psi0+pDC(3)*psi0^2+pDC(4)*psi0^3));
 
 om(1) = alt_w0;
 om(2) = alt_w1;
-phi(1) = (-psi0/psi1);
-phi(2) = 1/psi1;
+psi(1) = (-psi0/psi1);
+psi(2) = 1/psi1;
 end
 %------------------------------------------------------------------------
 function [S_mean,S_median,UCI,BCI,ntest,nobs,S_Edist]=getCI(ser,lev,flag)
@@ -2722,13 +2609,7 @@ for rc = 1:par.nc
 
     cut = round(nobs(rc,1)*lev/2); % cut for computing confidence bounds
     if cut ==0
-        %{
-        CI_BU(rc,:) = [-1,1];
-        UCI(rc,1) = 1;
-        BCI(rc,1) = -1;
-        S_median(rc,1) = 0;
-        S_mean(rc,1) = 0;
-        %}
+      
         CI_BU(rc,:) = [NaN,NaN];
         UCI(rc,1) = NaN;
         BCI(rc,1) = NaN;
@@ -2755,11 +2636,7 @@ end
 %--------------------------------------------------------------------------
 function [Edist_peA,Edist_pe,Edist_tpn,med_tpn,med_peA,y_min,y_max,mean_peB] = bb_perform(datas,data,out_r,out_data,par,opt)
 
-disp('Initializing Boostrap')
-opt.warn = 0;
-if opt.warn ==0
-    disp('Warnings and iter counter turned off for boostrap iters')
-end
+
 %% Back out Residuals for Bootstrapping
 
 out_r.Csmooth = datas.C;
@@ -2788,17 +2665,7 @@ rhoC = corr(out_r.resid_C(2:end),out_r.resid_C(1:end-1));
 % Fish for >0 autocorrelation in T
 varT = var(out_r.resid_T);
 rhoT = corr(out_r.resid_T(2:end),out_r.resid_T(1:end-1));
-if rhoT>0 || rhoC>0
-    bb_d = 1;
-    disp('Using Block Bootrap...')
-    disp(['Residual Autocorr C: ',num2str(rhoC)])
-    disp(['Residual Autocorr T: ',num2str(rhoT)])
-else
-    bb_d = 0;
-    disp(['Residual Autocorr C: ',num2str(rhoC)])
-    disp(['Residual Autocorr T: ',num2str(rhoT)])
-    %disp('Using Block Bootrap...')
-end
+
 
 
 I = out_r.resid_C ==0;
@@ -2815,7 +2682,7 @@ flag_out = zeros(par.nb,1);                % Outlier indicator 1: outlier, 0: he
 flag_out_sign = zeros(par.nb,1);           % Outlier indicator 1: outlier, 0: healthy iteration
 flag_out_flip = zeros(par.nb,1);           % Outlier indicator 1: outlier, 0: healthy iteration
 flag_out_nons = zeros(par.nb,1);           % Outlier indicator 1: outlier, 0: healthy iteration
-phi_bd = -99999*ones(par.nb,par.nmts);     % Coefficients
+psi_bd = -99999*ones(par.nb,par.nmts);     % Coefficients
 if par.nmlv==1
     om_bd = -99999*ones(par.nb,par.nmlv+1);   % Coefficients
 else
@@ -2846,6 +2713,23 @@ if opt.smooth==0
     opt.b=0;
 end
 if opt.b==1
+    disp('Initializing Boostrap')
+    opt.warn = 0;
+    if opt.warn ==0
+        disp('Warnings turned off for boostrap iters')
+    end
+    if rhoT>0 || rhoC>0
+        bb_d = 1;  % Choose block boostrap
+        disp('Using Block Bootrap...')
+        disp(['Residual Autocorr C: ',num2str(rhoC)])
+        disp(['Residual Autocorr T: ',num2str(rhoT)])
+    else
+        bb_d = 0;
+        disp(['Residual Autocorr C: ',num2str(rhoC)])
+        disp(['Residual Autocorr T: ',num2str(rhoT)])
+        %disp('Using Block Bootrap...')
+    end
+    disp('...')
     disp('Boostrapping...')
     par.iter = 1; % discard first iteration for display purposes
 
@@ -2981,9 +2865,11 @@ if opt.b==1
             end
             if opt.warn_bo==1
                 disp(['Bootstrap iteration No: ',num2str(par.iter-1)])
+            else                
+                disp('Boostrap iter counter turned off')  
             end
-            phi_bd(i,:) = out.psi_estiCT;           % Coefficients
-            om_bd(i,:) = out.om_estiCT;           % Coefficients
+            psi_bd(i,:) = out.psi_estiCT;           % Coefficients
+            om_bd(i,:) = out.om_estiCT;             % Coefficients
             olp_bd(i) = out.olpCT;                  % Overlap interval
             pol_estiCT(i) = out.pol_estiCT;         % Gamma
             LS_CT(i) = out.LS_CT;                   % LS
@@ -3013,10 +2899,10 @@ if opt.b==1
     end
 else
     if opt.smooth==0
-        disp('No smoothing step: Unable to boostrap')
+        disp('Unable to boostrap : User chose to skip smoothing step')
     end
     if opt.smooth==1 && opt.b==0
-        disp('User chose to skip boostrap step')
+        disp('Boostrap: User chose to skip boostrap step')
     end
     flag_out = ones(par.nb,1);                % Outlier indicator 1: outlier, 0: healthy iteration
 end % end of boostrap conditional
@@ -3036,8 +2922,8 @@ rat_ex = nansum(I1A)/nansum(I1B);
 % All Bootstraps
 % Omegas's
 [mean_om,med_om,UCI_om,BCI_om,~,nobs_om,Edist_om]=getCI(om_bd,par.lev,flag_out);
-% Phi's
-[mean_phi,med_phi,UCI_phi,BCI_phi,~,nobs_phi,Edist_phi]=getCI(phi_bd,par.lev,flag_out);
+% psi's
+[mean_psi,med_psi,UCI_psi,BCI_psi,~,nobs_psi,Edist_psi]=getCI(psi_bd,par.lev,flag_out);
 % Policy Effects
 [mean_pe,med_pe,UCI_pe,BCI_pe,~,nobs_pe,Edist_pe]=getCI(pol_estiCT,par.lev,flag_out);
 % Cum gamma
@@ -3101,21 +2987,28 @@ IC = (tp_normCT-par.tp) > (med_tpn-par.tp)-0.05 & (tp_normCT-par.tp) <(med_tpn-p
 save([par.outpath,par.name_fapp,par.fapp])
 %load(['output/',par.name_fapp,par.fapp])
 %% Results table and save it
-stat = {'gamma bench';'gamma ard bench window';'gamma ard median window ';'windon size'};
+stat1 = {'gamma bench';'gamma arnd bench window';'gamma arnd median window ';'window size'};
+stat2 = {'gamma bench';'gamma arnd bench window';'window size'};
 for ii = 0:par.nmts-1
-    stat = [stat;{['phi ',num2str(ii)]}];
+    stat1 = [stat1;{['psi ',num2str(ii)]}];
+    stat2 = [stat2;{['psi ',num2str(ii)]}];
 end
 for ii = 0:1
-    stat = [stat;{['om ',num2str(ii)]}];
+    stat1 = [stat1;{['omega ',num2str(ii)]}];
+    stat2 = [stat2;{['omega ',num2str(ii)]}];
 end
-estimate = [out_r.pol_estiCT;out_r.pol_estiCT;mean_peB;out_r.olpCT;out_r.psi_estiCT(:);out_r.om_estiCT(:)];
-mean   = [mean_pe;mean_peA;mean_peB;mean_tpn-par.tp;mean_phi(:);mean_om(:)];
-median = [med_pe;med_peA;med_peB;med_tpn-par.tp;med_phi(:);med_om(:)];
-lowerbound  = [BCI_pe;BCI_peA;BCI_peB;BCI_tpn-par.tp;BCI_phi(:);BCI_om(:)];
-upperbound  = [UCI_pe;UCI_peA;UCI_peB;UCI_tpn-par.tp;UCI_phi(:);UCI_om(:)];
-nobs   = [nobs_pe;nobs_peA;nobs_peB;nobs_tpn;nobs_phi(:);nobs_om(:)];
-
-table1 = table(stat,estimate,mean,median,lowerbound,upperbound,nobs);
+estimate1 = [out_r.pol_estiCT;out_r.pol_estiCT;mean_peB;out_r.olpCT;out_r.psi_estiCT(:);out_r.om_estiCT(:)];
+estimate2 = [out_r.pol_estiCT;out_r.pol_estiCT;out_r.olpCT;out_r.psi_estiCT(:);out_r.om_estiCT(:)];
+mean   = [mean_pe;mean_peA;mean_peB;mean_tpn-par.tp;mean_psi(:);mean_om(:)];
+median = [med_pe;med_peA;med_peB;med_tpn-par.tp;med_psi(:);med_om(:)];
+lowerbound  = [BCI_pe;BCI_peA;BCI_peB;BCI_tpn-par.tp;BCI_psi(:);BCI_om(:)];
+upperbound  = [UCI_pe;UCI_peA;UCI_peB;UCI_tpn-par.tp;UCI_psi(:);UCI_om(:)];
+nobs   = [nobs_pe;nobs_peA;nobs_peB;nobs_tpn;nobs_psi(:);nobs_om(:)];
+if opt.b==0
+    table1 = table(stat2,estimate2);
+else
+    table1 = table(stat1,estimate1,mean,median,lowerbound,upperbound,nobs);
+end
 
 disp(['Computing ',num2str((1-par.lev)*100),' CIs'])
 disp(table1)
@@ -3397,9 +3290,6 @@ else
     par.Tname = char(data.names_st(1,:));
 end
 
-%opt.manual_guess = 2;   % 1: Pick Coefficient Initial Guess Manually 2: Polinomial analitical guess
-%par.m_guess = [0.8,2.14,0.75,]; % Choose your manual guess, not recomended
-%opt.sgues = 0;          % Use fmincon with sgues
 
 
 if opt.manual_guess==1
@@ -3414,13 +3304,14 @@ i_mg = 0;
 mg1_lv = [];
 mg1_ts = [];
 if par.nmlv == 2 && par.nmts==2 && opt.manual_guess==2
-    disp('Default Choise Proportional+Aditive Level; using polynomial guess')
+    disp('Choice: Proportional+Aditive Level; using polynomial guess')
     opt.manual_guess=1;
     [par.m_guess_lv,par.m_guess_ts] = an_pol3(par.tu,par.time,data); % Use one of the analitical solutions
    
     mg1_lv = par.m_guess_lv;
     mg1_ts = par.m_guess_ts;
-    disp(['Trying: \om0:',num2str(par.m_guess_lv(1)),' \om1:',num2str(par.m_guess_lv(2)),' \phi1:',num2str(par.m_guess_ts(1)),' \phi2:',num2str(par.m_guess_ts(2))])
+    disp(['Trying: \om0:',num2str(par.m_guess_lv(1)),' \om1:',num2str(par.m_guess_lv(2)),' \psi1:',num2str(par.m_guess_ts(1)),' \psi2:',num2str(par.m_guess_ts(2))])
+    
     if mg1_lv(2) <=0
     par.m_guess_lv(1) = 0;
     par.m_guess_lv(2) = max(datas.T)/max(datas.C);
@@ -3430,7 +3321,7 @@ if par.nmlv == 2 && par.nmts==2 && opt.manual_guess==2
     mg1_lv = par.m_guess_lv;
     mg1_ts = par.m_guess_ts;
     disp('Polinomial guess failed: using default guess')
-    disp(['Default_guess: \om0:',num2str(par.m_guess_lv(1)),' \om1:',num2str(par.m_guess_lv(2)),' \phi1:',num2str(par.m_guess_ts(1)),' \phi2:',num2str(par.m_guess_ts(2))])
+    disp(['Default_guess: \om0:',num2str(par.m_guess_lv(1)),' \om1:',num2str(par.m_guess_lv(2)),' \psi1:',num2str(par.m_guess_ts(1)),' \psi2:',num2str(par.m_guess_ts(2))])
    
     end
     [olp1,flag1,flag_ext1,tu_norm] = norm_func_alt(data,par,opt);
@@ -3441,78 +3332,19 @@ if par.nmlv == 2 && par.nmts==2 && opt.manual_guess==2
     if flag1<=0
         error('Minimization didnt converge. Algorithm coudnt detect leading region, debug manually');
     end
+    disp('...')
 else
-    disp('Default Choise Proportional Level; using polynomial guess')
+    disp('Choice: Proportional Level; using polynomial guess')
     [olp1,flag1,flag_ext1] = norm_func_alt(data,par,opt);
-
-    if flag_ext1==1 % If Extreme case,
-        if par.nmts==2 % In the case of default
-
-            par.nmlv = 2;   % Restrict level for detCT, this does not affect benchmark
-            warning('Extreme case detected')
-            disp('WARNING!: switched to manual guess:')
-            opt.manual_guess=1;
-            [par.m_guess_lv,par.m_guess_ts] = an_pol3(par.tu,par.time,data); % Use one of the analitical solutions
-            i_mg = 1;
-            mg1_lv = par.m_guess_lv;
-            mg1_ts = par.m_guess_ts;
-            disp(['WARNING!: Trying: \om0:',num2str(par.m_guess_lv(1)),' \om1:',num2str(par.m_guess_lv(2)),' \phi1:',num2str(par.m_guess_ts(1)),' \phi2:',num2str(par.m_guess_ts(2))])
-
-            [olp1,flag1,flag_ext1,tu_norm] = norm_func_alt(data,par,opt);
-        end
-
-    end
 
     if flag_ext1==1
         error('Extreme case detected, try changing the guess')
     end
 
     if flag1<=0 % if minimization failed with error
-        par.nmlv=2;
-        if par.nmts==3
-
-            opt.manual_guess=1;
-            [par.m_guess_lv,par.m_guess_ts] = an_pol2(par.tu,par.time,data,0); % Use one of the analitical solutions
-            i_mg = 1;
-            mg1_lv = par.m_guess_lv;
-            mg1_ts = par.m_guess_ts;
-            disp('WARNING!: switched to manual guess:')
-
-            disp(['WARNING!: Trying: \om0:',num2str(par.m_guess_lv(1)),' \om1:',num2str(par.m_guess_lv(2)),' \phi1:',num2str(par.m_guess_ts(1)),' \phi2:',num2str(par.m_guess_ts(2)),' \phi3: ',num2str(par.m_guess_ts(3))])
-
-
-            [olp1,flag1,flag_ext1,tu_norm] = norm_func_alt(data,par,opt);
-            if flag_ext1==1
-                error('Extreme case detected, try changing the guess')
-            end
-            if flag1>0 && olp1<0 && tu_norm <0 % Converged to wrong solution
-                flag1 = -3;
-            end
-
-            if flag1<=0
-                [par.m_guess_lv,par.m_guess_ts] = an_pol2(par.tu,par.time,data,1); % Use one of the analitical solutions
-                i_mg = 1;
-                mg1_lv = par.m_guess_lv;
-                mg1_ts = par.m_guess_ts;
-                disp('WARNING!: switched to manual guess:')
-
-                disp(['WARNING!: Trying: \om0:',num2str(par.m_guess_lv(1)),' \om1:',num2str(par.m_guess_lv(2)),' \phi1:',num2str(par.m_guess_ts(1)),' \phi2:',num2str(par.m_guess_ts(2)),' \phi3: ',num2str(par.m_guess_ts(3))])
-
-                [olp1,flag1,flag_ext1,tu_norm] = norm_func_alt(data,par,opt);
-                if flag_ext1==1
-                    error('Extreme case detected, try changing the guess')
-                end
-                if flag1<=0
-                    error('Minimization didnt converge. Algorithm coudnt detect leading region, debug manually');
-                end
-                if flag1>0 && olp1<0 && tu_norm <0
-                    error('Minimization dis giving nonsence, check guess');
-                end
-            end
-        else
-            error('Minimization didnt converge. Algorithm coudnt detect leading region, debug manually');
-        end
+        error('Minimization didnt converge. Algorithm coudnt detect leading region, debug manually');
     end
+    disp('...')
 end
 
 
@@ -3583,36 +3415,18 @@ par.tvec_c_long = (1:par.nt_long)';
 %{
 om(1): Aditive Magnitude Shifter
 om(2): Proportional Magnitude Shifter
-phi(1): Time Shifter
-phi(2): Speed Shifter
+psi(1): Time Shifter
+psi(2): Speed Shifter
 %}
 %% Mapping C to T
 m_guess_lv = par.m_guess_lv;
 m_guess_ts = par.m_guess_ts;
 
 opt.CT = 1;
-[cf.phiCT,cf.omCT,x0] = make_x(data,opt,m_guess_lv,m_guess_ts,par);
+[cf.psiCT,cf.omCT,x0] = make_x(data,opt,m_guess_lv,m_guess_ts,par);
 
-
-if opt.sgues==1
-    if par.nmts==3 && par.nmlv==2
-        [x0,~,~] = fmincon(@(x)func_df(x,data.T,data.C,opt,par),x0,[],[],[],[],[-Inf,0,-Inf,eps,eps],[Inf,Inf,Inf,Inf,Inf],[],opt.sol_fmin);
-    elseif par.nmts==3 && par.nmlv==1
-        [x0,~,~] = fmincon(@(x)func_df(x,data.T,data.C,opt,par),x0,[],[],[],[],[0,-Inf,eps,eps],[Inf,Inf,Inf,Inf],[],opt.sol_fmin);
-
-    elseif par.nmts==2 && par.nmlv==2
-        if par.rphi==1
-            x0 = [x0(1),x0(2),x0(4)];
-            [x0,~,~] = fmincon(@(x)func_df(x,data.T,data.C,opt,par),x0,[],[],[],[],[-Inf,0,eps],[Inf,Inf,Inf],[],opt.sol_fmin);
-        else
-            [x0,~,~] = fmincon(@(x)func_df(x,data.T,data.C,opt,par),x0,[],[],[],[],[-Inf,0,-Inf,-Inf],[Inf,Inf,Inf,Inf],[],opt.sol_fmin);
-        end
-    elseif par.nmts==2 && par.nmlv==1
-        [x0,~,~] = fmincon(@(x)func_df(x,data.T,data.C,opt,par),x0,[],[],[],[],[0,-Inf,-Inf],[Inf,Inf,Inf],[],opt.sol_fmin);
-    end
-end
 try
-    if par.nmlv==2 && par.rphi==1
+    if par.nmlv==2 && par.rpsi==1
         if size(x0,2)==3
             % nothing, the guess was updated
         else
@@ -3633,18 +3447,18 @@ if eflagCT==0
 end
 if par.nmlv==1
     cf.omCT = [0,xCT(1:par.nmlv)];
-    cf.phiCT = xCT(par.nmlv+1:end);
+    cf.psiCT = xCT(par.nmlv+1:end);
 else
     cf.omCT = xCT(1:par.nmlv);
-    if par.nmlv==2 && par.rphi==1
-        cf.phiCT = [xCT(1:2),0,xCT(par.nmlv+1:end)];
+    if par.nmlv==2 && par.rpsi==1
+        cf.psiCT = [xCT(1:2),0,xCT(par.nmlv+1:end)];
     else
-        cf.phiCT = xCT(par.nmlv+1:end);
+        cf.psiCT = xCT(par.nmlv+1:end);
     end
 end
-%disp(['Coefficients in numerical mapping C to T: ', num2str(cf.phiCT)]);
+%disp(['Coefficients in numerical mapping C to T: ', num2str(cf.psiCT)]);
 
-tu_norm = func_stage(par.tu,cf.phiCT,0,par);
+tu_norm = func_stage(par.tu,cf.psiCT,0,par);
 flag_ext = 0;
 if tu_norm>2*par.nt
     flag_ext = 1; % Extreme case
@@ -3740,4 +3554,25 @@ end
 fprintf(fileID, '\\hline \n');
 fprintf(fileID, '\\end{tabular}');
 fclose(fileID);
+end
+%-----------------------------------------------------------------------------
+function check_addons(toolboxes,inn)
+% This function checks if the following add-on is installed
+% 
+    disp(['Verifying if ',inn, ' is installed:'])
+    
+    ntools = size(toolboxes.Name,1);
+    ind_aux = 0;
+    for oo = 1:ntools
+       if toolboxes.Name(oo) == inn
+        ind_aux = 1;
+       end
+    end
+    if ind_aux == 0 
+        message = ['SBI requires the MATLAB ',inn,'.Please install it and run the code again.'];
+        error(message)
+    else
+        disp([inn, ' is correctly installed.'])
+    end
+    disp('...')
 end
