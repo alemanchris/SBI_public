@@ -18,7 +18,7 @@ Technical Requirements:
 toolboxes
 
 DESCRIPTION
-SBI_norm calls functions:
+SBI_nrm calls functions:
     -smooth_ts: Smooths series, using a chosen smoother
     -norm_func: Performs normalization C to T and T to C, computes policy estimates and
         figures, see, figure index at the end.
