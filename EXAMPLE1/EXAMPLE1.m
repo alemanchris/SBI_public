@@ -1,19 +1,40 @@
 %{
+ -----------
  EXAMPLE 1:
+ -----------
+ Standalone, just run this file.
+
+ This example illustrates the use of the SBI_nrm.m  routine described in  
+ Aleman,  Busch,  Ludwig,  and  Santaeul`alia-Llopis  (2023) 
+ For the complete description of the SBI_nrm.m functionalities see the README file.
+
+  -----------
+ DESCRIPTION: 
+ -----------
  Uses example data to run SBI
+
+ 
 %}
 clear 
 close all
 clc
 
+%% Path information:
 main_path = cd;
 cd ..
 sbi_path = cd;
 cd(main_path);
 
 % Load Data
-load([main_path,'/input/exampledata'])
+try
+    load([main_path,'/input/exampledata'])
+catch
+    warning('Please create an input folder')
+    disp('Proceeding using internally loaded example data')
+    [data,data_time] = input_data;
+end
 
+%% Conduct SBI
 %% Required inputs
 % Asign Region Time Series
 idta(:,1) = data(:,3);
@@ -22,33 +43,78 @@ idta(:,2) = data(:,1);
 itm = data_time;
 % Set policy implementation year/date
 itp = 1960;
+
 %% Optional inputs
-% Choose operating system 1: Windows Default 2: Linux
-iOS = 2;
 % Region names
 irnam = {'REST';'REG1'}; % Write REG1 not REG_1, number of characters must be equal
 % Name your Outcome variable
 ionam = ['My Outcome'];
 % Name the units your time variable ('year','day','time')
 itnam = ['Year'];
-% Mapping (1:linear (Default) or 2:quadratic)
+% Mapping (1:Linear (DEFAULT) or 2:Quadratic)
 inmts = 1;
-% Level Adjustment Mapping (1:Proportional or 2:(Default)Proportional + Additive)
+% Level Adjustment Mapping (1:Proportional or 2:(DEFAULT) Proportional + Additive)
 inmlv = 1;
-% Smoothing step, use default 
-ismo = [];
-% Smoother, use default
-itsmo = [];
-% Boostrap % 1:Boostrap (Default) 0: Skip Boostrap Step
+% Smoothing step (0:no smoothing  or 1: (DEFAULT) apply smoother to pre_policy series)
+ismo = []; 
+% Smoother, Polynomial Regression
+itsmo = 2;
+% Boostrap % 1:Boostrap (DEFAULT) 0: Skip Boostrap Step
 ib = []; 
 %{
+% itsmo: Choose the smoother
+
      0: Moving average, with windown = 9;
-     1: Interpolation smoother CSAPS (DEFAULT) with smoothing parameter = 0.0008
-     2: Chebyshev nodes with Cheby Regression
+     1: Interpolation smoother CSAPS (DEFAULT) with smoothing parameter = 0.003
+     2: Polynomial Regression: Monomial or Chebyshev basis (DEFAULT Cheby basis)
      3: B-Splines
      4: HP Filter (lambda = 50)
 %}
 cd(sbi_path);
-SBI_nrm(idta,itm,itp,inmts,inmlv,ismo,itsmo,[],[],[],ib,[],[],irnam,itnam,ionam,[],main_path,iOS);
+SBI_nrm(idta,itm,itp,inmts,inmlv,ismo,itsmo,[],[],[],ib,[],[],irnam,itnam,ionam,[],main_path);
 cd(main_path)
 
+
+
+function [data,data_time] = input_data
+data = [0.0852751809759964	0.0513301185431316	0.0645614368316950;
+0.0735379534851326	0.0463277537117235	0.0636477199017658;
+0.0752885069066079	0.0487082854082965	0.0640354209148762;
+0.0748080432350238	0.0472925382865551	0.0608265833188217;
+0.0767130579013445	0.0533196672864737	0.0602574372088647;
+0.0746533266291447	0.0594868361046269	0.0611203910355823;
+0.0695235971305861	0.0481099031666972	0.0659302023252973;
+0.0789486430322425	0.0597343558594222	0.0642704057262035;
+0.0783126909354330	0.0481808407547422	0.0679911290380655;
+0.0774189981336439	0.0425017830321289	0.0670797520420725;
+0.0797242045692545	0.0500302262382623	0.0666674823809324;
+0.0803482800663924	0.0552887718714169	0.0673589684611647;
+0.0881848106163501	0.0456489695564956	0.0668513503994098;
+0.0745337580171970	0.0452525696197882	0.0666093244704723;
+0.0857441560525097	0.0467313440075917	0.0657301306730050;
+0.0908863776054059	0.0470680921659803	0.0668395170544286;
+0.101516997383021	0.0627233077752806	0.0767778749362943;
+0.116620374291080	0.0767663666991795	0.0841041093844609;
+0.110627967663251	0.0589745276922282	0.0849788335903967;
+0.117846054614133	0.0587487079001642	0.0855076604838267;
+0.114304998082224	0.0577646960008713	0.0874009253104783;
+0.130247940821598	0.0601529333758879	0.0911063116785779;
+0.122233010962884	0.0614153109168541	0.0923601257711104;
+0.125084284157066	0.0551925458614630	0.0898149938600560;
+0.123123415799692	0.0587048641772797	0.0902220575271338;
+0.125127606985939	0.0707099387200564	0.0937128602143593;
+0.152887429978798	0.0711086525388251	0.109569979591884;
+0.161619802546995	0.0713007100564513	0.114749444565941;
+0.171943912102378	0.0808592303969035	0.115882281004670;
+0.172858549150860	0.0816388247649957	0.121308569598328;
+0.175629942672029	0.0790364518454149	0.122384983809386;
+0.180449871993820	0.0970257198084448	0.133522811183290;
+0.205012945156693	0.0998959179146571	0.143763967802071;
+0.206376371036011	0.102536656955362	0.149154394708649;
+0.213798777519088	0.100430267265481	0.151532623687216;
+0.222403812186430	0.110250814326548	0.157551628967850;
+0.237296256337488	0.121546966060448	0.183114147533648;
+0.265483448358292	0.144128553923362	0.193882090356764];
+
+data_time = (1935:1:1972)';
+end
