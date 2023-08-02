@@ -1,7 +1,0 @@
- The following content exemplifies the use of the routine:
- SBI_nrm, that implements the Stage Based Identification methods in
- Aleman,  Busch,  Ludwig,  and  Santaeul`alia-Llopis  (2023)  
- Any comments please address them to christian.c.aleman[at]gmail.com
-
- EXAMPLE 1:
- Uses example data to run SBI
