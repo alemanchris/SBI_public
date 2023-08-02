@@ -1,21 +1,29 @@
 %{
+ -----------
+ EXAMPLE 3:
+ -----------
+ Standalone, just run this file.
+
  The following is an example of the use of the routine:
  SBI_nrm, that implements the Stage Based Identification methods in
  Aleman,  Busch,  Ludwig,  and  Santaeul`alia-Llopis  (2020)  
- Any comments please address them to christian.c.aleman[at]gmail.com
+ For the complete description of the SBI_nrm.m functionalities see the README file.
 
- EXAMPLE 3:
+ -----------
+ DESCRIPTION: 
+ -----------
+
  Exact identification using GLF(Generalized Logistic Func) with as the data generatig process
  This also serves as a placebo example, the policy effect is zero thus
  estimated effect should be zero.
- - This example shows the perfomance of SBI on the Generaliwed logictic
- function(GLF) and its derivative(dydxGFL)
+
 %}
 clear 
 close all
 clc
 
-%% path information:
+
+%% Path information:
 main_path = cd;
 cd ..
 sbi_path = cd;
@@ -28,13 +36,13 @@ Time = (1:T)';
 tp = 70;        % Placebo policy date
 theta1 = [0,35,0.088,90]; 
 theta2 = [0,40,0.09,77]; 
-GT = GLF(theta1,Time);
-gT = diff(GT);
-GC = GLF(theta2,Time);
-gC = diff(GC);
+[GT,gT] = GLF(theta1,Time);
+gT2 = diff(GT); % this is an approximation of the derivative.  
+[GC,gC] = GLF(theta2,Time);
+gC2 = diff(GC);
 
-%% Analitical Solutions to the normalization taken from Aleman,  Busch,  Ludwig,  and  Santaeul`alia-Llopis  (2020)
-an_phi = NaN(4,1);
+%% Analytical Solutions to the normalization taken from Aleman,  Busch,  Ludwig,  and  Santaeul`alia-Llopis  (2020)
+an_psi = NaN(4,1);
 theta1(4) = theta1(3)*theta1(4);
 theta2(4) = theta2(3)*theta2(4);
 
@@ -48,49 +56,23 @@ theta1T = theta1(2);
 theta2T = theta1(4);
 theta3T = theta1(3);
 
-an_phi(2) = (theta0T-theta1T)/(theta0C-theta1C);
-an_phi(1) = theta0T-theta0C*an_phi(2);
-an_phi(3) = (theta2C-theta2T)/theta3C;
-an_phi(4) = theta3T/theta3C;
+an_psi(2) = (theta0T-theta1T)/(theta0C-theta1C);
+an_psi(1) = theta0T-theta0C*an_psi(2);
+an_psi(3) = (theta2C-theta2T)/theta3C;
+an_psi(4) = theta3T/theta3C;
 
 % Get the inverse
-om(1) = an_phi(1);
-om(2) = an_phi(2);
-phi(1) = (-an_phi(3)/an_phi(4));
-phi(2) = 1/an_phi(4);
+om(1) = an_psi(1);
+om(2) = an_psi(2);
+psi(1) = (-an_psi(3)/an_psi(4));
+psi(2) = 1/an_psi(4);
 
-%% Normalization in Levels
-% Graph series
-figure(100)
-hold on
-plot(Time,GT,'r-');
-plot(Time,GC,'b-');
-xline(tp,'k-');
-title('GLF')
-legend('RED','BLUE','Policy date')
+%% Plot Analytical Solutions
+plot_analytical_GLF(Time,GT,GC,tp,psi,om) % Normalization in Levels
+pause(10)
 
-% Mapping C to T
-
-figure(101)
-hold on
-plot(Time,GT(:,1),'r-');
-plot(Time,GC(:,1),'b-');
-plot(phi(1)+Time.*phi(2),om(1)+GC(:,1).*om(2),'bx--');
-xline(tp,'k-');
-legend('RED','BLUE','BLUE Norm','Policy')
-
-% Mapping T to C
-
-figure(102)
-hold on
-plot(Time,GT(:,1),'r-');
-plot(Time,GC(:,1),'b-');
-plot(-phi(1)/phi(2)+Time./phi(2),-om(1)/om(2)+GT(:,1)./om(2),'rx--');
-xline(tp,'k-');
-legend('RED','BLUE','RED Norm','Policy')
-
-%% Run SBI for GLF
-% Required inputs
+%% PART 1: Run SBI for GLF
+%% Required inputs
 % Asign Region Time Series
 idta(:,1) = GC;
 idta(:,2) = GT;
@@ -100,8 +82,6 @@ itm = Time;
 itp = tp;
 %% Optional inputs
 % Region names
-iOS = 2; % 1: Windows 2: Linux
-% Region names
 irnam = {'BLU';'RED'}; % Write REG1 not REG_1, number of characters must be equal
 % Name your Outcome variable
 ionam = ['y'];
@@ -109,122 +89,90 @@ ionam = ['y'];
 itnam = ['time'];
 % Custom Name Prefix for tables and figures
 icusnam = ['GLF'];
-% Mapping (1:linear (Default) or 2:quadratic)
+% Mapping (1:linear (DEFAULT) or 2:quadratic)
 inmts = 1;
-% Level Adjustment Mapping (1:Proportional or 2:(Default)Proportional + Additive)
+% Level Adjustment Mapping (1:Proportional or 2:(DEFAULT)Proportional + Additive)
 inmlv = 2;
-% Smoothing step (0:no smoothing or 1:apply smoother to series)
+% Smoothing step (0:no smoothing  or 1: (DEFAULT) apply smoother to pre_policy series)
 ismo = 0; 
 % Smoother
 itsmo = [];
-% Boostrap % 1:Boostrap(Default) 0: Skip Boostrap Step
+% Boostrap % 1:Boostrap(DEFAULT) 0: Skip Boostrap Step
 ib = 0; 
+% Show graphs % 0:Dont show(DEFAULT) 1: Show benchmark graphs
+ifv = 0; 
 %{
+% itsmo: Choose the smoother
      0: Moving average, with windown = 9;
-     1: Interpolation smoother CSAPS (DEFAULT) with smoothing parameter = 0.0008
-     2: Chebyshev nodes with Cheby Regression
+     1: Interpolation smoother CSAPS (DEFAULT) with smoothing parameter = 0.003
+     2: Polynomial Regression: Monomial or Chebyshev basis (DEFAULT Cheby basis)
      3: B-Splines
      4: HP Filter (lambda = 50)
 %}
 
 cd(sbi_path);
-SBI_nrm(idta,itm,itp,inmts,inmlv,ismo,itsmo,[],[],[],ib,[],[],irnam,itnam,ionam,icusnam,main_path,iOS);
+SBI_nrm(idta,itm,itp,inmts,inmlv,ismo,itsmo,[],[],[],ib,[],[],irnam,itnam,ionam,icusnam,main_path,ifv);
 cd(main_path);
 
 
-%% Compare mapping coeffs with analitical solution in a table
-
+%% Compare mapping coeffs with analytical solution in a table
+disp('***************************************************')
+disp('Comparison Table 1: GLF, analytical solution vs SBI')
+disp('***************************************************')
 % Load results from SBI
 load('output/results_table_GLF')
-phi_SBI(1,1) = table1.estimate(7);
-phi_SBI(2,1) = table1.estimate(8);
-phi_SBI(3,1) = table1.estimate(5);
-phi_SBI(4,1) = table1.estimate(6);
-coeffs = ["Omega_0";"Omega_1";"Phi_0";"Phi_1"];
-varNames = ["Coeffs","Analitical","SBI_norm"];
-comp_table = table(coeffs,[om(1);om(2);phi(1);phi(2)],phi_SBI,'VariableNames',varNames);
+psi_SBI(1,1) = table1.estimate2(6);
+psi_SBI(2,1) = table1.estimate2(7);
+psi_SBI(3,1) = table1.estimate2(4);
+psi_SBI(4,1) = table1.estimate2(5);
+coeffs = ["Omega_0";"Omega_1";"psi_0";"psi_1"];
+varNames = ["Coeffs","Analytical","SBI_norm"];
+comp_table = table(coeffs,[om(1);om(2);psi(1);psi(2)],psi_SBI,'VariableNames',varNames);
 disp(comp_table)
 
-%% Normalization of the Derivative dy/dxGLF
-
-% Plot the Series 
-figure(200)
-hold on
-plot(Time(1:end-1),gT,'r-');
-plot(Time(1:end-1),gC,'b-');
-xline(tp,'k-');
-title('dydx GLF')
-legend('RED','BLUE','Policy date')
-
-% Plot Analytical Solution
-
-% Mapping C to T
-figure(201)
-hold on
-plot(Time(1:end-1),gT(:,1),'r-');
-plot(Time(1:end-1),gC(:,1),'b-');
-plot(phi(1)+Time(1:end-1).*phi(2),om(1)+gC(:,1).*om(2),'bx--');
-xline(tp,'k-');
-legend('RED','BLUE','BLUE Norm','Policy')
-
-% Mapping C to T
-figure(202)
-hold on
-plot(Time(1:end-1),gT(:,1),'r-');
-plot(Time(1:end-1),gC(:,1),'b-');
-plot(-phi(1)/phi(2)+Time(1:end-1)./phi(2),-om(1)/om(2)+gT(:,1)./om(2),'rx--');
-xline(tp,'k-');
-legend('RED','BLUE','RED Norm','Policy')
-
-%% Run SBI for dy/dxGLF
-% Required inputs
-% Asign Region Time Series
-clear idta 
-idta(:,1) = gC;
-idta(:,2) = gT;
-% Set Time Variable
-itm = Time(1:end-1);
-% Set policy implementation year/date
-itp = tp;
-%% Optional inputs
-% Custom Name Prefix for tables and figures
-icusnam = ['dydxGLF'];
-%{
-     0: Moving average, with windown = 9;
-     1: Interpolation smoother CSAPS (DEFAULT) with smoothing parameter = 0.0008
-     2: Chebyshev nodes with Cheby Regression
-     3: B-Splines
-     4: HP Filter (lambda = 50)
-%}
-%SBI_nrm(idta,itm,itp,inmts,inmlv,ismo,itsmo,[],ib,irnam,itnam,ionam);
-
-cd(sbi_path);
-SBI_nrm(idta,itm,itp,inmts,inmlv,ismo,itsmo,[],[],[],ib,[],[],irnam,itnam,ionam,icusnam,main_path,iOS);
-cd(main_path);
 
 
-%% Compare mapping coeffs with analitical solution in a table
-
-% Load results from SBI
-load('output/results_table_dydxGLF')
-phi_SBI(1,1) = table1.estimate(7);
-phi_SBI(2,1) = table1.estimate(8);
-phi_SBI(3,1) = table1.estimate(5);
-phi_SBI(4,1) = table1.estimate(6);
-coeffs = ["Omega_0";"Omega_1";"Phi_0";"Phi_1"];
-varNames = ["Coeffs","Analitical","SBI_norm"];
-comp_table = table(coeffs,[om(1);om(2);phi(1);phi(2)],phi_SBI,'VariableNames',varNames);
-disp(comp_table)
 
 % ------------------------------------------------------------------------
-function [y] = GLF(theta,x)
+function [y,dydx] = GLF(theta,x)
 
 y = (theta(2)-theta(1))./(1+exp(-theta(3).*( x - theta(4))))+theta(1); 
+dydx = -(theta(3).*(theta(1) - theta(2)).*exp(theta(3).*(theta(4) + x)))./(exp(theta(3)*theta(4)) + exp(theta(3).*x)).^2;
+end
+% ------------------------------------------------------------------------
+function plot_analytical_GLF(Time,GT,GC,tp,psi,om)
+
+% Graph series
+figure(100)
+hold on
+plot(Time,GT,'r-','linewidth',1.2);
+plot(Time,GC,'b-','linewidth',1.2);
+xline(tp,'k-','linewidth',1.1);
+title('GLF')
+legend('RED','BLUE','Policy date')
+
+% Mapping C to T
+
+figure(101)
+hold on
+plot(Time,GT(:,1),'r-','linewidth',1.2);
+plot(Time,GC(:,1),'b-','linewidth',1.2);
+plot(psi(1)+Time.*psi(2),om(1)+GC(:,1).*om(2),'bx--');
+xline(tp,'k-','linewidth',1.1);
+title('C to T')
+legend('RED','BLUE','BLUE Norm','Policy')
+
+% Mapping T to C
+
+figure(102)
+hold on
+plot(Time,GT(:,1),'r-','linewidth',1.2);
+plot(Time,GC(:,1),'b-','linewidth',1.2);
+plot(-psi(1)/psi(2)+Time./psi(2),-om(1)/om(2)+GT(:,1)./om(2),'rx--');
+xline(tp,'k-','linewidth',1.1);
+title('T to C')
+legend('RED','BLUE','RED Norm','Policy')
 
 end
-
-
-
-
-
+% ------------------------------------------------------------------------
 
