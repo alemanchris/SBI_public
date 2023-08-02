@@ -7,7 +7,7 @@ Use this program at you own risk
 
 ATTENTION! 
 BEFORE YOU RUN THIS ROUTINE MAKE SURE YOU HAVE THE FOLLOWING: 
--At least two regions and their respective population
+-Time series data for two regions, save your data in the /input/ folder.
 -Date of NATIONWIDE policy implementation. (itp)
 -Create an 'input', 'output' folder, SBI_nrm.m will save results in these folders
 Technical Requirements: 
