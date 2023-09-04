@@ -9,7 +9,7 @@ Use this program at you own risk
 
 ATTENTION! 
 BEFORE YOU RUN THIS ROUTINE MAKE SURE YOU HAVE THE FOLLOWING: 
--Time Series data for two regions and save it into the /input/ folder
+-At least two regions and their respective population
 -Date of NATIONWIDE policy implementation. (itp)
 -Create an 'input', 'output' folder, SBI_nrm.m will save results in these folders
 Technical Requirements: 
@@ -18,7 +18,7 @@ Technical Requirements:
 toolboxes
 
 DESCRIPTION
-SBI_nrm.m calls functions:
+SBI_norm calls functions:
     -smooth_ts: Smooths series, using a chosen smoother
     -norm_func: Performs normalization C to T and T to C, computes policy estimates and
         figures, see, figure index at the end.
@@ -1046,7 +1046,7 @@ if opt.smooth~=0
         if opt.type_sth==1     % Poynomial Smoother (DEFAULT)
             datas.T(IT) = csaps((1:nT)',Taux(IT),par.sp,(1:nT)');
             datas.C(IC) = csaps((1:nC)',Caux(IC),par.sp,(1:nC)');
-
+            dert_stop = 1;
         elseif opt.type_sth==2 %  Polinomial regression, 
             datas.T(IT) = coll((1:nT)',Taux(IT),par,opt);
             datas.C(IC) = coll((1:nC)',Caux(IC),par,opt);
@@ -1126,6 +1126,7 @@ try
         [xCT,fvalCT,eflagCT] = fminunc(@func_df,x0,opt.sol,data.T,data.C,opt,par);
     end
     %fvalCT =func_df(x0,data.T,data.C,opt,par);
+    dert_stop = 1;
 catch
     xCT = [m_guess_lv,m_guess_ts];
     fvalCT = 0;
@@ -1159,6 +1160,7 @@ if nmatched<par.min_match
         error('Not Enough matched points: Possible causes: (1) Small sample pre-policy (less than 10 points prepolicy), (2) Extreme case, regions dont overlap')
     end
 end
+
 
 
 tu_norm = func_stage(par.tu,cf.psiCT,0,par);
@@ -1237,7 +1239,9 @@ if par.iter==0
     end
     disp('..............................................')
     disp('Mapping Results from C to T:')
-    disp(['Year in ',par.Cname,': ', num2str(par.tp), ' Stage in ',par.Tname,': ', num2str(tp_normCT_1)]);
+     if not(isnan(tp_normCT_1))
+        disp(['Year in ',par.Cname,': ', num2str(par.tp), ' Stage in ',par.Tname,': ', num2str(tp_normCT_1)]);
+     end
     if not(isnan(yr_init))
          disp(['Year in ',par.Cname,': ', num2str(par.t0), ' Stage in ',par.Tname,': ', num2str(yr_init)]);
     end
@@ -1266,7 +1270,7 @@ C_interp = interp1(par.tvec_c_long,data.CO,tvec_TC,'linear',NaN);
 if par.iter==0
     disp('..............................................')
     if opt.openend==1
-        I = par.time_long ==ppar.yend;
+        I = par.time_long ==par.yend;
         if opt.logs==1
             val_ab = (exp(CO_norm(I))-exp(data.TO(I)))/exp(data.TO(I))*100; % For Value Abadie
         else
@@ -1275,12 +1279,22 @@ if par.iter==0
         disp(['in ',num2str(ppar.yend),' (YC-YT)/YT*100= ',num2str(val_ab)])
     else
         I = time_long_y == tp_normCT_1;
-        if opt.logs==1
-            val_ab = (exp(C_norm_no(I))-exp(T_interp(I)))/exp(T_interp(I))*100;
+        if sum(I)==0
+            I = par.time_long ==par.yend;
+            if opt.logs==1
+                val_ab = (exp(CO_norm(I))-exp(data.TO(I)))/exp(data.TO(I))*100; % For Value Abadie
+            else
+                val_ab = (CO_norm(I)-data.TO(I))/data.TO(I)*100;
+            end
+            disp(['in ',num2str(par.yend),' (YC-YT)/YT*100= ',num2str(val_ab)])
         else
-            val_ab = (C_norm_no(I)-T_interp(I))/(T_interp(I))*100;
+            if opt.logs==1
+                val_ab = (exp(C_norm_no(I))-exp(T_interp(I)))/exp(T_interp(I))*100;
+            else
+                val_ab = (C_norm_no(I)-T_interp(I))/(T_interp(I))*100;
+            end
+            disp(['in S(tp) = ',num2str(round(tp_normCT_1,2)),' (YC-YT)/YT*100 = ',num2str(val_ab)])
         end
-        disp(['in S(tp) = ',num2str(round(tp_normCT_1,2)),' (YC-YT)/YT*100 = ',num2str(val_ab)])
     end
     disp('..............................................')
 end
@@ -1315,20 +1329,25 @@ plot(par.tvec_c_long,data.TO,'r-')
 %}
 
 %% Policy Effect CT
-In = sum(isnan(CO_norm([par.tu-1,par.tu,par.tu+1])));
+InA = sum(isnan(CO_norm([par.tu-1,par.tu,par.tu+1])));
+
 
 pdiff_CT = NaN(size(data.TO));
 pdiff_CT_int = NaN(size(data.TO));
 pdiff_CT_pre = NaN(size(data.TO));      % 'Pre'policy gamma
 pdiff_CT_int_pre = NaN(size(data.TO));  % 'Pre'policy interpolated gamma
 tp_normCT_3=func_stage(par.tu,cf.psiCT,0,par);
-if tp_normCT_3>size(data.TO,1)
-    % Extreme case
-    if opt.warn ==1
-        warning('ERROR: Detected extreme case CT')
+if InA==0
+    if tp_normCT_3>size(data.TO,1)
+      
+            if opt.warn ==1
+                warning('s(tp) is larger than T . Policy effect will be computed up to T')
+            end
+            
+            tp_normCT_3 = size(data.TO,1);
+            opt.openend = 1;
+       
     end
-    tp_normCT_3 = size(data.TO,1)-1;
-    In = 1;
 end
 
 % Flag to fish for outliers
@@ -1336,7 +1355,7 @@ flag_out = 1; % 1: outlier(flip etc...)
 flag_out_flip = 0; 
 flag_out_sign = 0;
 flag_out_nons = 0;
-if In==0 && abs(cf.psiCT(2))<5000
+if InA==0 && abs(cf.psiCT(2))<5000
 
     %% Estimated Policy Effect
 
@@ -1378,7 +1397,11 @@ if In==0 && abs(cf.psiCT(2))<5000
             pdiff_CT(I)=pdiff_CT_alt(ii);
         end
     end
-    olp_CT = tp_normCT_1-par.tp;
+    if isnan(tp_normCT_1)
+        olp_CT = par.yend-par.tp;
+    else
+        olp_CT = tp_normCT_1-par.tp;
+    end
 
     if olp_CT<=0
         gammarCT = NaN;
@@ -1482,7 +1505,7 @@ end
 
 %% Policy Effect TC
 %In = sum(isnan(TO_norm_TC([par.tu-1,par.tu,par.tu+1])));
-In = sum(isnan(TO_norm_TC([par.tu-1,par.tu]))); % Otherwise I cannot compute policy effect
+InB = sum(isnan(TO_norm_TC([par.tu-1,par.tu]))); % Otherwise I cannot compute policy effect
 % Same as gamma
 pdiff_TC = NaN(size(data.TO));
 pdiff_TC_int = NaN(size(data.TO));
@@ -1493,18 +1516,19 @@ if tp_normTC_3<1
         warning('ERROR: Detected extreme case TC')
     end
     tp_normTC_3 = 2;
+
 end
 aux1=func_stage(par.tu,cf.psiTC,0,par);
 if aux1<1
     if opt.warn ==1
         warning('ERROR: Detected extreme case TC')
     end
-    In = 1;
+    InB = 1;
 elseif aux1>par.nt_long
     if opt.warn ==1
         warning('ERROR: Detected extreme case TC')
     end
-    In = 1;
+    InB = 1;
 end
 % Jump werid cases on T to C
 Iaux = (tvec_TC - par.tu)>0; % not larger or equal cuz if equal I the effect of the first day =0
@@ -1514,10 +1538,10 @@ if (par.tu)>=fpos
     if opt.warn ==1
         warning('ERROR: Detected strange case TC')
     end
-    In = 1;
+    InB = 1;
 end
 
-if In==0 && abs(cf.psiTC(2))<5000
+if InB==0 && abs(cf.psiTC(2))<5000
 
     %% Estimated Policy Effect
 
@@ -1592,7 +1616,10 @@ end
 
 
 II = eflagCT==-1||eflagCT==-3; % Algo stalled
-III = isnan(tp_normCT_1); % Extreme case
+III = InA>0; %isnan(tp_normCT_1); % Extreme case
+if isnan(tp_normCT_1)
+    tu_norm = par.nt_long;
+end
 if III==1
     o_vals.flagCT = 'Extreme Case';
     tu_norm = par.nt-1;
@@ -1675,7 +1702,10 @@ end
 
 
 II = eflagTC==-1||eflagTC==-3;
-III = isnan(tp_normTC_1);
+III = InB>0;% isnan(tp_normTC_1);
+if isnan(tp_normTC_1)
+    tu_norm = 2;
+end
 
 if  III==1
     o_vals.flagTC = 'Extreme Case';
@@ -1729,7 +1759,7 @@ if par.vis_ind ==1
 
     if isnan(tp_normCT_1)
         tp_normCT_1 = par.t1;
-        tp_normCT_3 = par.nt-1;
+        tp_normCT_3 = par.nt_long-1;
     end
 
 
@@ -3436,7 +3466,10 @@ try
     else
         [xCT,fvalCT,eflagCT] = fminunc(@func_df,x0,opt.sol,data.T,data.C,opt,par);
     end
-    %fvalCT =func_df(x0,data.T,data.C,opt,par);
+    fvalCT =func_df(xCT,data.T,data.C,opt,par);
+
+    
+    dert_stop = 1;
 catch
     xCT = [m_guess_lv,m_guess_ts];
     fvalCT = 0;
