@@ -243,15 +243,7 @@ else
     par.inpath  = [ipath,'/input/'];
 end
 
-%% Start diary
-diary off
-if iOS==1
-    delete([ipath,'\output\diary_SBI.txt']);
-    diary([ipath,'\output\diary_SBI.txt']);
-else
-    delete([ipath,'/output/diary_SBI.txt']);
-    diary([ipath,'/output/diary_SBI.txt']);
-end
+
 %% Create output folder
 disp('Creating Output folder:')
 if iOS==1
@@ -268,6 +260,16 @@ if status==0
 	error('Error while creating Output folder')
 end
 disp('...')
+
+%% Start diary
+diary off
+if iOS==1
+    delete([ipath,'\output\diary_SBI.txt']);
+    diary([ipath,'\output\diary_SBI.txt']);
+else
+    delete([ipath,'/output/diary_SBI.txt']);
+    diary([ipath,'/output/diary_SBI.txt']);
+end
 
 %% Create Input folder
 disp('Creating Input folder:')
@@ -1128,7 +1130,11 @@ try
     %fvalCT =func_df(x0,data.T,data.C,opt,par);
     dert_stop = 1;
 catch
-    xCT = [m_guess_lv,m_guess_ts];
+    if par.nmlv == 1 
+        xCT = [m_guess_lv(2),m_guess_ts(1:par.nmts)];
+    else
+        xCT = [m_guess_lv(1:2),m_guess_ts(1:par.nmts)];
+    end
     fvalCT = 0;
     eflagCT = -3;
     if opt.warn ==1
@@ -1676,7 +1682,11 @@ else
     o_vals.LS_CT = LS_CT;
     o_vals.psi_estiCT = cf.psiCT;
     o_vals.om_estiCT = cf.omCT;
-    o_vals.tp_normCT  = tp_normCT_1;
+    if isnan(tp_normCT_1) % This is a case where it falls out o the domain
+     o_vals.tp_normCT  = par.t1;
+    else
+     o_vals.tp_normCT  = tp_normCT_1;
+    end
     o_vals.fp_norm  = yr_init;
     o_vals.fvalCT =  fvalCT;
     o_vals.flag_out = flag_out;
@@ -3046,13 +3056,9 @@ save([par.outpath,'results_table_',opt.cusn],'table1')
 table2latex(table1, [par.outpath,'results_table_',opt.cusn])
 if opt.b==1
     %% Figures
-    if max(med_cgA)>0
-        y_max = max(max([max(UCI_cgA),max(UCI_cgPA(par.tu-3:par.tu))]),max(out_data.pdiff_CT_int(1:par.tu))).*1.05;
-        y_min = min([min(BCI_cgA),min(BCI_cgPA(par.tu-3:par.tu)),0]).*1.05;
-    else
-        y_max = max([max(UCI_cgA),max(UCI_cgPA(par.tu-3:par.tu)),0]).*1.05;
-        y_min = min(min([min(BCI_cgA),min(BCI_cgPA(par.tu-3:par.tu))]),min(out_data.pdiff_CT_int(1:par.tu))).*1.05;
-    end
+    y_max = max([max(UCI_cgA),max(UCI_cgPA(par.tu-3:par.tu)),max(out_data.pdiff_CT_int(1:par.tu)),max(BCI_cgA),max(BCI_cgPA(par.tu-3:par.tu)),0]).*1.05;
+    y_min = min([min(UCI_cgA),min(UCI_cgPA(par.tu-3:par.tu)),min(out_data.pdiff_CT_int(1:par.tu)),min(BCI_cgA),min(BCI_cgPA(par.tu-3:par.tu)),0]).*1.05;
+
     % Aproximate the mean only for the graph
     try
         mean_peB = interp1([floor(out_r.tp_normCT-par.t0+1),ceil(out_r.tp_normCT-par.t0+1)],[med_cgA(floor(out_r.tp_normCT-par.t0+1)),med_cgA(ceil(out_r.tp_normCT-par.t0+1))],out_r.tp_normCT-par.t0+1,'linear',NaN);
@@ -3097,7 +3103,7 @@ if opt.b==1
         plot([par.tp,par.tp+1],[mean_cgPA(par.tu),med_cgA(par.tu+1)],'m-','linewidth',opt.lw2) % Center
         plot([par.tp,par.tp+1],[UCI_cgPA(par.tu),UCI_cgA(par.tu+1)],'k--','linewidth',opt.lw) % Center
         plot([par.tp,par.tp+1],[BCI_cgPA(par.tu),BCI_cgA(par.tu+1)],'k--','linewidth',opt.lw) % Center
-        ylim([-0.11,y_max])
+        ylim([y_min,y_max])
         %xlim([par.tp-3,med_tpn])
         xlim([par.tp-3,rbound1])
         yline(0,'-','Color',[0.5,0.5,0.5],'linewidth',opt.lw)
@@ -3138,7 +3144,7 @@ if opt.b==1
         plot([par.tp,par.tp+1],[mean_cgPA(par.tu),med_cgA(par.tu+1)],'m-','linewidth',opt.lw2) % Center
         plot([par.tp,par.tp+1],[UCI_cgPA(par.tu),UCI_cgA(par.tu+1)],'k--','linewidth',opt.lw) % Center
         plot([par.tp,par.tp+1],[BCI_cgPA(par.tu),BCI_cgA(par.tu+1)],'k--','linewidth',opt.lw) % Center
-        ylim([-0.11,y_max])
+        ylim([y_min,y_max])
         %xlim([par.tp-3,med_tpn])
         xlim([par.tp-3,rbound1])
         yline(0,'-','Color',[0.5,0.5,0.5],'linewidth',opt.lw)
