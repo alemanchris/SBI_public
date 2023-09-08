@@ -82,7 +82,7 @@ itm = Time;
 itp = tp;
 %% Optional inputs
 % Region names
-irnam = {'BLU';'RED'}; % Write REG1 not REG_1, number of characters must be equal
+irnam = {'BLUE';'RED'}; % Write REG1 not REG_1, number of characters must be equal
 % Name your Outcome variable
 ionam = ['y'];
 % Name the units your time variable ('year','day','time')
