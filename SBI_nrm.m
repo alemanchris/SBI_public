@@ -346,8 +346,23 @@ else
 end
 par.nt = size(data.outcome,1);    % Number of observations over time
 I = data.outcome<0;
+opt.rescale = 1;
+par.rescale = 0; 
 if sum(I,'all') >=1
-    error('Negative Values detected, rescale your data and run again')
+    %error('Negative Values detected, rescale your data and run again')
+    if opt.rescale ==0
+
+        error('Negative Values detected, rescale your data manually and run again. If you want the code to rescale it for you set opt.rescale==1')
+    else
+        par.rescale = 1;
+        warning('Negative Values detected, rescaling your data. This does not affect the interpretation of the results')
+
+        aux_val1 = abs(min(data.outcome,[],'all'));
+        aux_val2 = (max(data.outcome,[],'all')-min(data.outcome,[],'all'));
+        
+        par.scale = aux_val1+aux_val2;
+        data.outcome = data.outcome+par.scale;
+    end
 end
 %% Robustness
 if isempty(iplas)
@@ -670,8 +685,7 @@ for oo = lsmo%0:5
 
     [out_r] = norm_func(data,par,opt);
     
-    out_data = out_r;
-    
+ 
 
     %% Extract  Results
     i = 1; % if i>1, means there are more regions, yet to implement
@@ -694,7 +708,7 @@ for oo = lsmo%0:5
     %par.m_guess_ts = out_r.psi_estiCT; % Choose your manual guess, not recomended
     %par.m_guess_lv = out_r.om_estiCT; % Choose your manual guess, not recomended
     par.ind_plas = 0;
-    [Edist_peA,Edist_pe,Edist_tpn,med_tpn,mean_pol] = bb_perform(datas,data,out_r,out_data,par,opt);
+    [Edist_peA,Edist_pe,Edist_tpn,med_tpn,mean_pol] = bb_perform(datas,data,out_r,par,opt);
     if oo==5
         PPA(:,oo+1) = NaN;
         PPAT(:,oo+1) = out_r.pol_estiCT;
@@ -756,7 +770,7 @@ for oo = lsmo%0:5
 
             %% Back out Residuals for Bootstrapping
 
-            [Edist_peA,Edist_pe,Edist_tpn,med_tpn] = bb_perform(datas_p,data,out_p,out_data,par,opt);
+            [Edist_peA,Edist_pe,Edist_tpn,med_tpn] = bb_perform(datas_p,data,out_p,par,opt);
 
         end
     end
@@ -1275,31 +1289,33 @@ C_interp = interp1(par.tvec_c_long,data.CO,tvec_TC,'linear',NaN);
 
 if par.iter==0
     disp('..............................................')
-    if opt.openend==1
-        I = par.time_long ==par.yend;
-        if opt.logs==1
-            val_ab = (exp(CO_norm(I))-exp(data.TO(I)))/exp(data.TO(I))*100; % For Value Abadie
-        else
-            val_ab = (CO_norm(I)-data.TO(I))/data.TO(I)*100;
-        end
-        disp(['in ',num2str(ppar.yend),' (YC-YT)/YT*100= ',num2str(val_ab)])
-    else
-        I = time_long_y == tp_normCT_1;
-        if sum(I)==0
+    if par.rescale ==0
+        if opt.openend==1
             I = par.time_long ==par.yend;
             if opt.logs==1
                 val_ab = (exp(CO_norm(I))-exp(data.TO(I)))/exp(data.TO(I))*100; % For Value Abadie
             else
                 val_ab = (CO_norm(I)-data.TO(I))/data.TO(I)*100;
             end
-            disp(['in ',num2str(par.yend),' (YC-YT)/YT*100= ',num2str(val_ab)])
+            disp(['in ',num2str(ppar.yend),' (YC-YT)/YT*100= ',num2str(val_ab)])
         else
-            if opt.logs==1
-                val_ab = (exp(C_norm_no(I))-exp(T_interp(I)))/exp(T_interp(I))*100;
+            I = time_long_y == tp_normCT_1;
+            if sum(I)==0
+                I = par.time_long ==par.yend;
+                if opt.logs==1
+                    val_ab = (exp(CO_norm(I))-exp(data.TO(I)))/exp(data.TO(I))*100; % For Value Abadie
+                else
+                    val_ab = (CO_norm(I)-data.TO(I))/data.TO(I)*100;
+                end
+                disp(['in ',num2str(par.yend),' (YC-YT)/YT*100= ',num2str(val_ab)])
             else
-                val_ab = (C_norm_no(I)-T_interp(I))/(T_interp(I))*100;
+                if opt.logs==1
+                    val_ab = (exp(C_norm_no(I))-exp(T_interp(I)))/exp(T_interp(I))*100;
+                else
+                    val_ab = (C_norm_no(I)-T_interp(I))/(T_interp(I))*100;
+                end
+                disp(['in S(tp) = ',num2str(round(tp_normCT_1,2)),' (YC-YT)/YT*100 = ',num2str(val_ab)])
             end
-            disp(['in S(tp) = ',num2str(round(tp_normCT_1,2)),' (YC-YT)/YT*100 = ',num2str(val_ab)])
         end
     end
     disp('..............................................')
@@ -1361,6 +1377,28 @@ flag_out = 1; % 1: outlier(flip etc...)
 flag_out_flip = 0; 
 flag_out_sign = 0;
 flag_out_nons = 0;
+dataTTO = data.TO;
+dataCCO = data.CO;
+dataCC = data.C;
+dataTT = data.T;
+    if  par.rescale==1
+        % For C to T
+        T_interp = T_interp-par.scale;
+        data.TO = data.TO-par.scale;  
+        data.T = data.T -par.scale;
+        C_norm_no = C_norm_no-par.scale;
+        C_norm = C_norm-par.scale;
+        CO_norm = CO_norm -par.scale;
+
+        % For T to C
+        C_interp = C_interp -par.scale;
+        data.CO = data.CO -par.scale;
+        data.C = data.C -par.scale;
+        T_norm_no = T_norm_no -par.scale;
+        %T_norm = T_norm-par.scale;
+        TO_norm_TC = TO_norm_TC -par.scale;       
+  
+    end
 if InA==0 && abs(cf.psiCT(2))<5000
 
     %% Estimated Policy Effect
@@ -1465,8 +1503,8 @@ if InA==0 && abs(cf.psiCT(2))<5000
     end
     % Normalize fvalCT
 
-    aux_Cnorm = cf.psiCT(2).*interp1(tvec(1:par.tu),data.C(1:par.tu),svec(1:par.tu),'linear',NaN)+cf.psiCT(1);
-    avT = mean(data.TO(1:par.tu)); % Average deaths in reference region
+    aux_Cnorm = cf.psiCT(2).*interp1(tvec(1:par.tu),dataCC(1:par.tu),svec(1:par.tu),'linear',NaN)+cf.psiCT(1);
+    avT = mean(dataTTO(1:par.tu)); % Average deaths in reference region
     I = not(isnan(aux_Cnorm));
     numpoCT = sum(I);  % Number of matcheed points
     fvalCT =  fvalCT./(avT.*numpoCT); % Normalize it
@@ -1590,8 +1628,8 @@ if InB==0 && abs(cf.psiTC(2))<5000
         DLS_TC = LS_TC/olp_TC; % Effects by Stage
     end
 
-    aux_Tnorm = cf.psiTC(1).*interp1(tvec_TC(1:par.tu),data.T(1:par.tu),svec(1:par.tu),'linear',NaN);
-    avC = mean(data.CO(1:par.tu));      % Average pre-policy outcome in reference region
+    aux_Tnorm = cf.psiTC(1).*interp1(tvec_TC(1:par.tu),dataTT(1:par.tu),svec(1:par.tu),'linear',NaN);
+    avC = mean(dataCCO(1:par.tu));      % Average pre-policy outcome in reference region
     I = not(isnan(aux_Tnorm));
     numpoTC = sum(I);                   % Number of matched points
     fvalTC =  fvalTC./(avC.*numpoTC);   % Normalize it:
@@ -1796,9 +1834,11 @@ if par.vis_ind ==1
     hold off
 
     %% Before Normalization
-    ymin = min([min(data.TO),min(data.CO),min(CO_norm)]);
-    ymax = max([max(data.TO),max(data.CO),max(CO_norm)])*1.005;
-    ymax2 = max([max(data.TO),max(CO_norm)])*1.005;
+    ymin = min([min(data.TO),min(data.CO),min(CO_norm),min(C_norm_no)]);
+    ymax = max([max(data.TO),max(data.CO),max(CO_norm),max(C_norm_no)])*1.005;
+    %ymax2 = max([max(data.TO),max(CO_norm)])*1.005;
+
+  
 
 
     f2=figure(2);
@@ -1841,7 +1881,7 @@ if par.vis_ind ==1
     xline(rbound,'k--','linewidth',1.1)
     legend([l1,l2],{[par.Cnamenorm,' Norm'],par.Tnamenorm},'Location','Best','interpreter','latex','FontSize',opt.fz2-1,'box','off')
     xlim([par.t00,par.t1]);
-    ylim([ymin,ymax2]);
+    ylim([ymin,ymax]);
     set(gca, 'FontSize',opt.fz1);
     ylabel(par.outcome_name,'interpreter','latex','FontSize',opt.fz2)
     xlabel('Stage','interpreter','latex','FontSize',opt.fz2)
@@ -2220,6 +2260,35 @@ else %opt.manual_guess == 2
         x = [pom(2),ppsi];
     else
         x = [pom,ppsi];
+    end
+end
+
+x = real(x);
+if par.nmlv==1
+    if x(1)<0.0000001
+        x(1) = 1;
+        if opt.warn ==1
+            warning('WARNING! guess for \omega_1=0 using \omega_1=1 instead ')
+        end
+    end
+    if x(3)<0.0000001
+        x(3) = 1;
+        if opt.warn ==1
+            warning('WARNING! guess for \psi_2=0 using \psi_2=1 instead ')
+        end
+    end
+else
+    if x(2)<0.0000001
+        x(2) = 1;
+        if opt.warn ==1
+            warning('WARNING! guess for \omega_1=0 using \omega_1=1 instead ')
+        end
+    end
+    if x(4)<0.0000001
+        x(4) = 1;
+        if opt.warn ==1
+            warning('WARNING! guess for \psi_2=0 using \psi_2=1 instead ')
+        end
     end
 end
 
@@ -2674,7 +2743,7 @@ end
 
 end
 %--------------------------------------------------------------------------
-function [Edist_peA,Edist_pe,Edist_tpn,med_tpn,med_peA,y_min,y_max,mean_peB] = bb_perform(datas,data,out_r,out_data,par,opt)
+function [Edist_peA,Edist_pe,Edist_tpn,med_tpn,med_peA,y_min,y_max,mean_peB] = bb_perform(datas,data,out_r,par,opt)
 
 
 %% Back out Residuals for Bootstrapping
@@ -3056,8 +3125,8 @@ save([par.outpath,'results_table_',opt.cusn],'table1')
 table2latex(table1, [par.outpath,'results_table_',opt.cusn])
 if opt.b==1
     %% Figures
-    y_max = max([max(UCI_cgA),max(UCI_cgPA(par.tu-3:par.tu)),max(out_data.pdiff_CT_int(1:par.tu)),max(BCI_cgA),max(BCI_cgPA(par.tu-3:par.tu)),0]).*1.05;
-    y_min = min([min(UCI_cgA),min(UCI_cgPA(par.tu-3:par.tu)),min(out_data.pdiff_CT_int(1:par.tu)),min(BCI_cgA),min(BCI_cgPA(par.tu-3:par.tu)),0]).*1.05;
+    y_max = max([max(UCI_cgA),max(UCI_cgPA(par.tu-3:par.tu)),max(out_r.pdiff_CT_int(1:par.tu)),max(BCI_cgA),max(BCI_cgPA(par.tu-3:par.tu)),0]).*1.05;
+    y_min = min([min(UCI_cgA),min(UCI_cgPA(par.tu-3:par.tu)),min(out_r.pdiff_CT_int(1:par.tu)),min(BCI_cgA),min(BCI_cgPA(par.tu-3:par.tu)),0]).*1.05;
 
     % Aproximate the mean only for the graph
     try
@@ -3091,10 +3160,10 @@ if opt.b==1
         p2 = plot(par.t0:par.t1,mean_cgA,'m--','linewidth',opt.lw2);
         p4 = plot(par.t0:par.t1,UCI_cgA,'k--','linewidth',opt.lw);
         plot(par.t0:par.t1,BCI_cgA,'k--','linewidth',opt.lw)
-        %p5 = plot(out_data.time_norm,out_data.pdiff_CT_int,'o','MarkerSize',8,'linewidth',2.2,'Color',[0.4940 0.1840 0.5560]);
-        %p6 = plot(par.time,out_data.pdiff_CT,'^','MarkerSize',8,'linewidth',2.2,'Color',[0.4940 0.1840 0.5560]);
-        %plot(out_data.time_norm,out_data.pdiff_CT_int_pre,'ko','MarkerSize',8,'linewidth',2.2);
-        %plot(par.time,out_data.pdiff_CT_pre,'k^','MarkerSize',8,'linewidth',2.2);
+        %p5 = plot(out_r.time_norm,out_r.pdiff_CT_int,'o','MarkerSize',8,'linewidth',2.2,'Color',[0.4940 0.1840 0.5560]);
+        %p6 = plot(par.time,out_r.pdiff_CT,'^','MarkerSize',8,'linewidth',2.2,'Color',[0.4940 0.1840 0.5560]);
+        %plot(out_r.time_norm,out_r.pdiff_CT_int_pre,'ko','MarkerSize',8,'linewidth',2.2);
+        %plot(par.time,out_r.pdiff_CT_pre,'k^','MarkerSize',8,'linewidth',2.2);
         plot(par.t0:par.t1,mean_cgPA,'k-','linewidth',opt.lw2);
         plot(par.t0:par.t1,UCI_cgPA,'k--','linewidth',opt.lw);
         plot(par.t0:par.t1,BCI_cgPA,'k--','linewidth',opt.lw);
@@ -3132,10 +3201,10 @@ if opt.b==1
         p2 = plot(par.t0:par.t1,mean_cgA,'m--','linewidth',opt.lw2);
         p4 = plot(par.t0:par.t1,UCI_cgA,'k--','linewidth',opt.lw);
         plot(par.t0:par.t1,BCI_cgA,'k--','linewidth',opt.lw)
-        %p5 = plot(out_data.time_norm,out_data.pdiff_CT_int,'o','MarkerSize',8,'linewidth',2.2,'Color',[0.4940 0.1840 0.5560]);
-        %p6 = plot(par.time,out_data.pdiff_CT,'^','MarkerSize',8,'linewidth',2.2,'Color',[0.4940 0.1840 0.5560]);
-        %plot(out_data.time_norm,out_data.pdiff_CT_int_pre,'ko','MarkerSize',8,'linewidth',2.2);
-        %plot(par.time,out_data.pdiff_CT_pre,'k^','MarkerSize',8,'linewidth',2.2);
+        %p5 = plot(out_r.time_norm,out_r.pdiff_CT_int,'o','MarkerSize',8,'linewidth',2.2,'Color',[0.4940 0.1840 0.5560]);
+        %p6 = plot(par.time,out_r.pdiff_CT,'^','MarkerSize',8,'linewidth',2.2,'Color',[0.4940 0.1840 0.5560]);
+        %plot(out_r.time_norm,out_r.pdiff_CT_int_pre,'ko','MarkerSize',8,'linewidth',2.2);
+        %plot(par.time,out_r.pdiff_CT_pre,'k^','MarkerSize',8,'linewidth',2.2);
         plot(par.t0:par.t1,mean_cgPA,'k-','linewidth',opt.lw2);
         plot(par.t0:par.t1,UCI_cgPA,'k--','linewidth',opt.lw);
         plot(par.t0:par.t1,BCI_cgPA,'k--','linewidth',opt.lw);
@@ -3317,6 +3386,7 @@ if I==1
     data.CO = datas.CO;
     par.Cname = char(data.names_st(1,:));
     par.Tname = char(data.names_st(2,:));
+    par.CT = 1;
 else
     data.T = datas.C;
     data.C = datas.T;
@@ -3324,6 +3394,7 @@ else
     data.CO = datas.TO;
     par.Cname = char(data.names_st(2,:));
     par.Tname = char(data.names_st(1,:));
+    par.CT = 0;
 end
 
 
@@ -3455,8 +3526,28 @@ psi(1): Time Shifter
 psi(2): Speed Shifter
 %}
 %% Mapping C to T
-m_guess_lv = par.m_guess_lv;
-m_guess_ts = par.m_guess_ts;
+if par.CT==1
+    m_guess_lv = par.m_guess_lv;
+    m_guess_ts = par.m_guess_ts;
+else
+   
+    if par.nmts == 3
+        m_guess_ts = [-par.m_guess_ts(1)/par.m_guess_ts(2) ,1/par.m_guess_ts(2),0];
+        if par.nmlv == 2
+            m_guess_lv = [-par.m_guess_lv(1),1/par.m_guess_lv(2)];
+        else
+            m_guess_lv = [0,1/par.m_guess_lv(1)];
+        end
+    else
+        m_guess_ts = [-par.m_guess_ts(1)/par.m_guess_ts(2) ,1/par.m_guess_ts(2)];
+        if par.nmlv == 2
+            m_guess_lv = [-par.m_guess_lv(1),1/par.m_guess_lv(2)];
+        else
+            m_guess_lv = [0,1/par.m_guess_lv(1)];
+        end
+    end
+
+end
 
 opt.CT = 1;
 [cf.psiCT,cf.omCT,x0] = make_x(data,opt,m_guess_lv,m_guess_ts,par);
