@@ -1,0 +1,7 @@
+v 1
+d Stata Program Repository
+d Christian Daniel Aleman Pericon
+d New York University AbuDhabi
+d 
+d 
+p sbinrm
