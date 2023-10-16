@@ -1,0 +1,7 @@
+d 'sbiinstall': Program to redirect to sbinrm.ado in this repository
+d
+d Requires: Stata 14 or above
+d
+d Distribution-Date: 20230910
+d 
+F sbinrm.ado
