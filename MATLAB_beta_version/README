@@ -1,1 +1,124 @@
+Copyright (C) 2023 Christian Aleman, Christopher Busch, Alexander Ludwig, Raül Santaeulalia-Llopis
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation
 
+Use this program at you own risk
+
+ATTENTION! 
+BEFORE YOU RUN THIS ROUTINE MAKE SURE YOU HAVE THE FOLLOWING: 
+-Time series data for two regions, save your data in the /input/ folder.
+-Date of NATIONWIDE policy implementation. (itp)
+-Create an 'input', 'output' folder, SBI_nrm.m will save results in these folders
+Technical Requirements: 
+(1)This routine has been tested using MATLAB 2020b
+(2)Requires the optimization, global optimization and curvefitting
+toolboxes
+
+DESCRIPTION
+SBI_nrm.m calls functions:
+    -smooth_ts: Smooths series, using a chosen smoother
+    -norm_func: Performs normalization C to T and T to C, computes policy estimates and
+        figures, see, figure index at the end.
+    -bb_perform: Boostraps results from norm_func
+OUTPUT OF THE CODE:
+    - Table of results with bootstrap 90% CI (also in Latex format)
+    - Normalization figures
+    - Saves diary in output/diary_SBI.txt 
+
+User can choose between linear nmts = 1 or quadratic nmts = 2 stage time
+transform
+User can choose between Proportional Level adjustment nmlv = 1 or proportional plus aditive = 2 
+WARNING!
+if nmts = 2, the inverse t^-1(s) is aproximated by a quadratic fit, results
+are reported accordingly, thus the parameters cannot be interpreted in the
+same way as in the linear case
+
+INPUTS: 
+    Required inputs
+        -idta: Outcome Variable of two regions, Tx2 Matrix, where T is the size of the sample in time observations e.g
+        year
+        -itm: Time units Tx1 (Years, Months Days, etc)
+        -itp: Policy date (date after which one expects policy effects to be non-zero)
+
+    Optional inputs
+        Visualize benchmark figures : figs 1 to 12
+            -ifv: 0: Dont show figures 1: Show figures (DEFAULT)
+            (Boostrap figures will still show if boostrap option is turned on ib: 1)
+        Operating System : 
+            -iOS: Choose your operating system 1:Windows 2:Unix/Linux/MAC
+            (DEFAULT: Windows)
+        Path: 
+            -ipath: Set path to save results, (DEFAULT: Current Working
+            directory)
+        Normalization options: 
+            -inmts: 1: (DEFAULT) Time stage transform 2:quadratic time stage transform 
+            -inmlv: 1: Proportional level Adjustment 2: (DEFAULT) Proportional
+                        + Aditive Level       
+            -ismo:  1: (DEFAULT) Smoothing 0: No smoothing
+            -irob:  1: Robustness of Smoother 0: No Robustness, will run only the chosen smoother or No smoother (DEFAULT) 
+            -itsmo: Type of smoother        
+                (you can change the default values manually, in section "Options for smoothing" )
+                0: Moving average, with windown = 9;
+                1: Interpolation smoother CSAPS (DEFAULT) with smoothing parameter = 0.0008
+                2: Polynomial Regression: Monomial or Chebyshev basis (DEFAULT Cheby basis)
+                3: B-Splines, 
+                4: HP filter (lambda=50)
+            -iopen: 1: Open end Ident Interval 0: Limited Indent interval (DEFAULT) 
+            -ici: CI bands threshold (DEFAULT 0.1 that is 90% Bands)
+            -ib : 0: No bootstrap 1: Boostrap (DEFAULT)
+            -ilog: 0: Data in levels (DEFAULT) 1: Data in Logs
+        Placebo: 
+            -iplas: 1: Placebo 5 years early 0: No Placebo (DEFAULT)
+        Labels
+            -irnam: Region labels
+            -itnam: Time label
+            -ionam: Outcome label
+            -icusn: Custom Figure Prefix when saving figures, (DEFAULT "F")
+            
+        
+
+OUTPUT: 
+    -om_esti:  Nxnmlv Level mapping parameters 
+    -psi_esti: Nxnmts Level mapping parameters 
+    -pol_esti: Nx1 Policy Estimate in log difference
+    -tp_norm1: Nx1 Location of policy date after normalization
+    -fp_norm:  Nx1 Location of the first point in C to time of T
+    -l_opt:    Nx1 Lenght of the overlap interval 
+    -flag :    Nx1 1:Mapping didnt converge 2:Mapping delivers non-sence
+-Figures Index:  
+  Mapping C to T
+    fig_1: Mapping function
+    fig_2: Time Series Before Normalization
+    fig_3: Time Series After Normalization
+    fig_4: Zoom Overlap Interval No Interpolated data
+    fig_5: Zoom Overlap Interval + Interpolated data
+    fig_6: Cum Gamma zoom Overlap Interval, Interpolated data
+    fig_7: Cum Gamma Zoom Overlap Interval, + No interpolated data
+    fig_8: Combined figure 5 and figure 6
+  Mapping T to C
+    fig_9:  Time Series After Normalization
+    fig_10: Zoom Overlap Interval Interpolated data
+    fig_11: Cum Gamma Zoom Overlap Interval Interpolated data
+    fig_12: Combined figure 10 and figure 11
+  Confidence Bands
+    fig_20: Cummulative Gamma, + median at point estimate
+    fig_21: Time Series with bands
+    fig_22: Time Series Median Boostrap draw with bands
+    fig_23: histogram: gamma restricted around point estimate window (10%)
+    fig_24: histogram: gamma restricted around median window (10%)
+    fig_25: histogram: gamma unrestricted
+    fig_26: histogram: identification window length    
+
+
+Figure 1 has the option to have the mapping parameters in the
+title, for this set opt.title_coeff=1
+
+
+REMARKS: 
+-Trimming(anchor) is optional, to trim select par.cut>0
+-Local minizer is implemented
+
+CITATIONS: 
+- This routine uses the TABLE2LATEX function downloaded from
+ (https://github.com/foxelas/Matlab-assisting-functions/releases/tag/3.0), GitHub.
