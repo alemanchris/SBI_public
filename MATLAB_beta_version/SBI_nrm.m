@@ -3150,7 +3150,7 @@ if opt.b==1
 
     %% Cumulative gamma
     if par.ind_plas ==0
-        figure(20);
+        f20 = figure(20);
         hold on
         grid on
         %plot([par.tp,rbound2],[mean_peB,mean_peB],'m-','linewidth',opt.lw2)
@@ -3185,12 +3185,13 @@ if opt.b==1
         %title('Policy Effect ($\gamma_{s}$)','interpreter','latex')
         ylabel('$\gamma(s)$','interpreter','latex','FontSize',opt.fz2)
         xlabel('Stage','interpreter','latex','FontSize',opt.fz2)
+        saveas(f20,[par.outpath,'f20_',par.name_fapp,par.fapp, '.png']);
 
         % With No-smoother dots, careful, this is not the normalisez points,
         % those are hard to graph
     else
         % If placebo, compare with bechmark
-        figure(20);
+        f20 = figure(20);
         hold on
         grid on
         %plot([par.tp,rbound2],[mean_peB,mean_peB],'m-','linewidth',opt.lw2)
@@ -3226,13 +3227,14 @@ if opt.b==1
         %title('Policy Effect ($\gamma_{s}$)','interpreter','latex')
         ylabel('$\gamma(s)$','interpreter','latex','FontSize',opt.fz2)
         xlabel('Stage','interpreter','latex','FontSize',opt.fz2)
+        saveas(f20,[par.outpath,'f20_',par.name_fapp,par.fapp, '.png']);
     end
     %% The Regions
 
     data.rate(:,1) = data.oriC; %  Dashed Blue
     data.rate(:,2) = data.oriT;
     % Graph the data
-    figure(21);
+    f21 = figure(21);
     hold on
     set(gca, 'FontSize',opt.fz1);
     p1 = plot(par.t0:par.t1,data.rate(:,1),'bo','linewidth',1.1);
@@ -3250,9 +3252,10 @@ if opt.b==1
     legend([p3,p4,p9],{'Median $\mathcal{C}$','Median $\mathcal{T}$','$90\%$ CI'},'location','best','FontSize',opt.fz2,'interpreter','latex','box','off')
     xlabel(par.time_name,'interpreter','latex','FontSize',opt.fz2)
     ylabel(par.outcome_name,'interpreter','latex','FontSize',opt.fz2)
+    saveas(f21,[par.outpath,'f21_',par.name_fapp,par.fapp, '.png']);
 
     % Graph the bootstrap close to the median
-    figure(22)
+    f22 = figure(22)
     hold on
     set(gca, 'FontSize',opt.fz1);
     p1 = plot(par.time(1:par.tu),CO(1:par.tu,pos_med),'bo','linewidth',1);
@@ -3276,11 +3279,12 @@ if opt.b==1
     legend([p12,p13,p9],{'Median $\mathcal{C}$','Median $\mathcal{T}$','$90\%$ CI'},'location','best','FontSize',opt.fz2,'interpreter','latex','box','off')
     xlabel(par.time_name,'interpreter','latex','FontSize',opt.fz2)
     ylabel(par.outcome_name,'interpreter','latex','FontSize',opt.fz2)
+    saveas(f22,[par.outpath,'f22_',par.name_fapp,par.fapp, '.png']);
 
     %% Restricted
 
     % Around the benchmark window
-    figure(23);
+    f23 = figure(23);
     hold on
     set(gca, 'FontSize',opt.fz1);
     histogram(Edist_peA,'BinWidth',0.1/2.5,'FaceColor',[0.4660 0.6740 0.1880],'EdgeColor',[1,1,1])
@@ -3296,9 +3300,10 @@ if opt.b==1
     %xlim([-0.9,0.5])
     %ylim([0,50])
     legend([l0,l1,l2],{'Mean','Median','$90\%$ CI'},'Location','best','FontSize',opt.fz2-5,'interpreter','latex','box','off')
+    saveas(f23,[par.outpath,'f23_',par.name_fapp,par.fapp, '.png']);
 
     % Around the median Identification window
-    figure(24);
+    f24 = figure(24);
     hold on
     set(gca, 'FontSize',opt.fz1);
     histogram(Edist_peB,'BinWidth',0.1/2.5,'FaceColor',[0.4660 0.6740 0.1880],'EdgeColor',[1,1,1])
@@ -3314,11 +3319,12 @@ if opt.b==1
     %xlim([-0.9,0.5])
     %ylim([0,50])
     legend([l0,l1,l2],{'Mean','Median','$90\%$ CI'},'Location','best','FontSize',opt.fz2-5,'interpreter','latex','box','off')
+    saveas(f24,[par.outpath,'f24_',par.name_fapp,par.fapp, '.png']);
 
     %% Unrestricted
 
     % Pooled Policy Effect
-    figure(25);
+    f25 = figure(25);
     hold on
     set(gca, 'FontSize',opt.fz1);
     histogram(Edist_pe,'BinWidth',0.1/2.5,'FaceColor',[0.4660 0.6740 0.1880],'EdgeColor',[1,1,1])
@@ -3334,9 +3340,10 @@ if opt.b==1
     %xlim([-0.9,0.5])
     %ylim([0,50])
     legend([l0,l1,l2],{'Mean','Median','$90\%$ CI'},'Location','best','FontSize',opt.fz2-5,'interpreter','latex','box','off')
+    saveas(f25,[par.outpath,'f25_',par.name_fapp,par.fapp, '.png']);
 
     % Identification Interval
-    figure(26)
+    f26 = figure(26)
     hold on
     set(gca, 'FontSize',opt.fz1);
     histogram(Edist_tpn-par.tp,'BinWidth',1.1,'FaceColor',[0.4660 0.6740 0.1880],'EdgeColor',[1,1,1])
@@ -3351,10 +3358,11 @@ if opt.b==1
     %xlim([37-par.tp,65-par.tp])
     %ylim([0,280])
     legend([l0,l1,l2],{'Mean','Median','$90\%$ CI'},'Location','best','FontSize',opt.fz2-5,'interpreter','latex','box','off')
+    saveas(f26,[par.outpath,'f26_',par.name_fapp,par.fapp, '.png']);
     Edist_tpn = Edist_tpn-par.tp;
-    for k=[20:26]
-        saveas(figure(k),sprintf([par.outpath,'f%d_',par.name_fapp,par.fapp,'.png'],k)); % will create FIG1, FIG2,...
-    end
+    %for k=[20:26]
+    %    saveas(figure(k),sprintf([par.outpath,'f%d_',par.name_fapp,par.fapp,'.png'],k)); % will create FIG1, FIG2,...
+    %end
 end
 
 end
