@@ -1,1 +1,44 @@
 
+Beta Version 2.0 
+This version is still preliminary and incomplete, for the complete version please refer
+to the beta version in MATLAB SBI_nrm.m at  https://github.com/alemanchris/SBI_public/tree/main
+
+Copyright (C) 2023 Christian Aleman, Christopher Busch, Alexander Ludwig, Raül Santaeulalia-Llopis
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation
+
+Use this program at you own risk
+
+ATTENTION! 
+BEFORE YOU RUN THIS ROUTINE MAKE SURE YOU HAVE THE FOLLOWING: 
+-Time series data for two regions, save your data in the /input/ folder.
+-Date of NATIONWIDE policy implementation. (tp)
+
+Technical Requirements: 
+(1)This routine has been tested using STATA 14
+ sbinorm, runs the Stage Based Identification routine descrived in 
+ Aleman,  Busch,  Ludwig,  and  Santaeul`alia-Llopis  (2023)  
+ Please address any comments to sbi.qa.method@gmail.com.
+
+---------------------------
+SYNTAX of sbinrm 
+---------------------------
+sbirnrm varlist, options
+ 
+varlist: 
+- time: time variable (in years, months, etc)
+- out1: Outcome for region 1
+- out2: Outcome for region 2 
+
+options: 
+- tp: time of policy implementation 
+- np: number of normalization parameters, either 3 or 4
+- sp: smoothing indicator, 1: Smooth (pre-policy) outcome or 0: No smoothing
+
+List of points left to implement for the next version: 
+- Automatic detection of leading region
+- Confidence bands
+- Placebo tests
+
+
