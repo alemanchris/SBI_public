@@ -49,12 +49,12 @@ set more off
 clear programs
 
 * Installing sbinrm routine
-qui:net from "https://raw.githubusercontent.com/alemanchris/SBI_STATA/main/"
+qui:net from "https://raw.githubusercontent.com/alemanchris/SBI_public/main/STATA_beta_version/"
 net install sbinrm, replace
 qui:net from "http://www.stata.com/"
 
 * Fetch Data
-import delimited "https://raw.githubusercontent.com/alemanchris/SBI_STATA/main/EXAMPLE2/input/example2_data.csv" 
+import delimited "https://raw.githubusercontent.com/alemanchris/SBI_public/main/STATA_beta_version/EXAMPLE2/input/example2_data.csv" 
 
 * Running sbinrm command
 sbinrm  time rest reg1, tp(-1) np(4) sp(0)
@@ -77,6 +77,6 @@ qui: replace X = . if X==-99999
 graph twoway (connected Y X if X>=-2, sort  mcolor(black) lcolor(black) lwidth(thick)) , yline(0) xline(-1) xline(0.319) legend(on order(1 "\gamma(s)") size(large) ring(0) bplacement(north)) name(graph_gamma, replace)  ylabel(-0.1[0.05] 0.1, labsize(vlarge)) xtitle("Stage", size(vlarge)) xlabel(-2[1]2, labsize(vlarge)) ytitle("\gamma(s)", size(vlarge))
 
 * Compare analytical results with SBI results
-qui: do "https://raw.githubusercontent.com/alemanchris/SBI_STATA/main/EXAMPLE2/input/get_analytical_sols2"
+qui: do "https://raw.githubusercontent.com/alemanchris/SBI_public/main/STATA_beta_version/EXAMPLE2/input/get_analytical_sols2"
 disp("Compare analytical results with SBI results")
 list Coeffs Analytical SBI_norm
