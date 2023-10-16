@@ -44,12 +44,12 @@ set more off
 clear programs
 
 * Installing sbinrm routine
-qui:net from "https://raw.githubusercontent.com/alemanchris/SBI_STATA/main/"
+qui:net from "https://raw.githubusercontent.com/alemanchris/SBI_public/main/STATA_beta_version/"
 net install sbinrm, replace
 qui:net from "http://www.stata.com/"
 
 * Fetch Data
-import delimited "https://raw.githubusercontent.com/alemanchris/SBI_STATA/main/EXAMPLE1/input/example1_data.csv" 
+import delimited "https://raw.githubusercontent.com/alemanchris/SBI_public/main/STATA_beta_version/EXAMPLE1/input/example1_data.csv" 
 
 * Running sbinrm command
 sbinrm  time reg1 rest, tp(1960) np(3) sp(1)
