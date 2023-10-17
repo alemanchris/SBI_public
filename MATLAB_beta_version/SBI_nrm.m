@@ -3255,7 +3255,7 @@ if opt.b==1
     saveas(f21,[par.outpath,'f21_',par.name_fapp,par.fapp, '.png']);
 
     % Graph the bootstrap close to the median
-    f22 = figure(22)
+    f22 = figure(22);
     hold on
     set(gca, 'FontSize',opt.fz1);
     p1 = plot(par.time(1:par.tu),CO(1:par.tu,pos_med),'bo','linewidth',1);
@@ -3343,7 +3343,7 @@ if opt.b==1
     saveas(f25,[par.outpath,'f25_',par.name_fapp,par.fapp, '.png']);
 
     % Identification Interval
-    f26 = figure(26)
+    f26 = figure(26);
     hold on
     set(gca, 'FontSize',opt.fz1);
     histogram(Edist_tpn-par.tp,'BinWidth',1.1,'FaceColor',[0.4660 0.6740 0.1880],'EdgeColor',[1,1,1])
