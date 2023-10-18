@@ -19,7 +19,7 @@ Technical Requirements:
 (1)This routine has been tested using STATA 14
  sbinorm, runs the Stage Based Identification routine descrived in 
  Aleman,  Busch,  Ludwig,  and  Santaeul`alia-Llopis  (2023)  
- Please address any comments to sbi.qa.method@gmail.com.
+ 
 
 ---------------------------
 SYNTAX of sbinrm 
