@@ -505,7 +505,7 @@ par.wdth = 3;       % length of bootstrap interval in Block Bootstrapping
 par.iter = 0;       % initialize iteration counter, point estimate is iteration 0
 
 %% Options for solvers
-opt.sol = optimset('Display','off','TolFun',1.0e-08,'TolX',1.0e-08);
+opt.sol = optimset('Display','off','TolFun',1.0e-08,'TolX',1.0e-08,'MaxIter',100000,'MaxFunEvals',100000);
 opt.sol_fmin = optimoptions('fmincon','Display','off','FunctionTolerance',1.0e-10,'OptimalityTolerance',1.0e-10);
 opt.optmin = optimoptions('fminunc','Display','off'); % for cheby
 
